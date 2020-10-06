@@ -8,25 +8,26 @@ from Envs.scenarios.game_mdmi import dcolors
 def plot_assign(assign, cap):
 	
 	lw = 2.
-	ms = 8.
+	ms = 10.
 	fs = 14
-	circscale = 10.
+	skip = 2
+	circscale = 2.
 	circoffset = 4.
 
 	for d, (p, ass) in enumerate(assign.items()):
-		for t, pref_dict, itarg in zip(ass['t'], ass['pref'], ass['i']):
-
-			for i, e in pref_dict.items():# preferred intruder
-				plt.plot(t, circoffset+circscale*int(i[1:]), 'C0o', 
-						 markersize=ms, alpha=0.2, color=dcolors[d])
+		for k, (t, pref_dict, itarg) in enumerate(zip(ass['t'], ass['pref'], ass['i'])):
+			if k%skip == 0:
+				for i, e in pref_dict.items():# preferred intruder
+					plt.plot(t, circoffset+circscale*int(i[1:]), 'C0o', 
+							 markersize=ms, alpha=0.2, color=dcolors[d])
+				
+				plt.plot(t, circoffset+circscale*itarg, 'C0o', 
+						 markersize=ms, color=dcolors[d]) # targeted intruder
 			
-			plt.plot(t, circoffset+circscale*itarg, 'C0o', 
-					 markersize=ms, color=dcolors[d]) # targeted intruder
-			
-			for i, data in cap.items(): # captured intruder
-				if t > data['tcap']:
-					plt.plot(t, circoffset+circscale*int(i[1:]), 'C0x', 
-							 markersize=ms, color=dcolors[int(data['dcap'][1:])])
+			# for i, data in cap.items(): # captured intruder
+			# 	if t > data['tcap']:
+			# 		plt.plot(t, circoffset+circscale*int(i[1:]), 'C0x', 
+			# 				 markersize=ms, color=dcolors[int(data['dcap'][1:])])
 
 		plt.plot(ass['t'], ass['e'], color=dcolors[d], linewidth=lw)
 
@@ -95,10 +96,12 @@ def compare_traj_and_v(ts, states_gazebo, cmd_simple, cap, param):
 
 	dcap = {'D'+str(d):{'t':[], 'i':[]} for d in range(param['nd'])}
 	for i, info in cap.items():
-		dcap[info['dcap']]['t'].append(info['tcap'])
-		dcap[info['dcap']]['i'].append(i)
+		if info['dcap'] is not None:
+			dcap[info['dcap']]['t'].append(info['tcap'])
+			dcap[info['dcap']]['i'].append(i)
+		# elif info[]
 
-	twpts = [ts[0]] + [data['tcap'] for i, data in cap.items()]
+	twpts = [ts[0]] + [data['tcap'] for i, data in cap.items() if data['dcap'] is not None]
 
 	# plot trajectories
 	for p, s in states_gazebo.items():
@@ -162,10 +165,14 @@ def velocity_response(ts, cmd_gazebo, states_gazebo):
 
 	for d in cmd_gazebo:
 		if 'D' in d:
-			plt.plot(ts, cmd_gazebo[d]['vy'](ts), color=dcolors[int(d[1:])], 
-					 linewidth=lw, label=d)
-			plt.plot(ts, states_gazebo[d]['vy'](ts), color=dcolors[int(d[1:])], 
+			# plt.plot(ts, [sqrt(cmd_gazebo[d]['vx'](t)**2+cmd_gazebo[d]['vy'](t)**2) for t in ts], color=dcolors[int(d[1:])], 
+			# 		 linewidth=lw, label=d)
+			plt.plot(ts, [sqrt(states_gazebo[d]['vx'](t)**2+states_gazebo[d]['vy'](t)**2) for t in ts], color=dcolors[int(d[1:])], 
 					 linestyle='dashed', linewidth=lw)	
+			# plt.plot(ts, cmd_gazebo[d]['vy'](ts), color=dcolors[int(d[1:])], 
+			# 		 linewidth=lw, label=d)
+			# plt.plot(ts, states_gazebo[d]['vy'](ts), color=dcolors[int(d[1:])], 
+			# 		 linestyle='dashed', linewidth=lw)	
 
 	plt.grid()
 	plt.xlabel('t(s)', fontsize=fs)

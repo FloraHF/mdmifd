@@ -38,13 +38,13 @@ cmd_simple = replay_follow(env, np.linspace(tmin, tmax, 50),
 # compare_cmdv(np.linspace(tmin, tmax, 50), cmd_gazebo, cmd_simple)
 
 # velocity and command velocity
-# velocity_response(np.linspace(tmin, tmax, 50), cmd_gazebo, states_gazebo)
+velocity_response(np.linspace(tmin, tmax, 50), cmd_gazebo, states_gazebo)
 
 # trajectory of gazebo and command velocity
 # compare_traj_and_v(ts, states_gazebo, cmd_simple, cap_gazebo, params)
 
 # plot assignment and efficiencies
-assign_gazebo, tc_gazebo = read_gazebo_assign('/Itarg.csv')
-assign_simple, tc_simple = read_gazebo_assign('/Itarg_pn.csv')
+# assign_gazebo, tc_gazebo = read_gazebo_assign('/Itarg.csv')
+# assign_simple, tc_simple = read_gazebo_assign('/Itarg_pn.csv')
 # plot_assign(assign_gazebo, cap_gazebo)
-plot_assign(assign_simple, cap_gazebo)
+# plot_assign(assign_simple, cap_gazebo)
