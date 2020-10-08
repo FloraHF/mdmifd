@@ -116,8 +116,8 @@ class Agent(Entity):
         self.id = ind
 
         self.r = None # capture range, Flora Fu @20200721
-        self.Rd = np.inf # sensing range, Flora Fu @20200805
-        self.Ri = np.inf # sensing range, Flora Fu @20200805
+        self.Rd = 5. # sensing range, Flora Fu @20200805
+        self.Ri = 5. # sensing range, Flora Fu @20200805
 
         self.neigh_i = []
         self.neigh_d = [] # neighbours within sensing range, Flora Fu @20200805
@@ -164,6 +164,7 @@ class World(object):
         for agent in self.agents:
             agent.state.p_vel = agent.action.u
             agent.state.p_pos += agent.state.p_vel * self.dt
+            # print(agent.name, norm(agent.state.p_vel), agent.state.p_pos)
 
         self.t += self.dt # FloraFu @20200806   
 

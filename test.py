@@ -1,10 +1,15 @@
 # import itertools
 # # orders = [order for order in itertools.permutations(list(agent.state.o))]
-a = {'D0':1, 'D1':3}
+a = {'D0':1.1, 'D1':3.3}
 # orders = [aa for aa in itertools.permutations(a)]
 # print(orders[0][0])
 
-print([aa for aa in a][-1])
+c = [aa for aa in a][-1]
+
+a['D1'] = 4.4
+
+print(c)
+
 
 # x = [2., [3., 5.], 4.]
 # a = [1., 1.]

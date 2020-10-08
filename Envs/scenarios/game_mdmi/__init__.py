@@ -21,8 +21,17 @@ dcolors = [np.array([0.1, 1., 0.05]),
 		   np.array([.7, 1., .5])]
 
 class Scenario(BaseScenario):
-	def make_world(self, r=.6, nd=1, ni=1, vd=1., vi=.8, Rd=5., Ri=5., xds=None, xis=None, resid=1):
+	def make_world(self, r=.6, 
+					nd=1, ni=1, 
+					vd=1., vi=.8, 
+					Rd=5., Ri=5., 
+					xds=None, xis=None, 
+					resid=1, 
+					iselect_mode='value',
+					mode='gazebo'):
+
 		world = Game()
+		world.mode = mode
 		# world properties
 		world.nd = nd
 		world.ni = ni
@@ -35,14 +44,15 @@ class Scenario(BaseScenario):
 		for i, agent in enumerate(world.agents):
 			# print(agent)
 			if i < world.nd:
-				agent.name = 'agentD %d' % i
+				agent.name = 'agent D%d' % i
+				agent.iselect_mode = iselect_mode
 				agent.r = r
 				agent.done_callback = self.done_callback_defender
 				agent.silent = False
 				agent.Rd = Rd
 				agent.Ri = Ri				
 			else:
-				agent.name = 'agentI %d' % (i-world.nd)
+				agent.name = 'agent I%d' % (i-world.nd)
 				agent.done_callback = self.done_callback_intruder
 				agent.enter_callback = self.is_enter
 				agent.capture_callback = self.is_capture				
@@ -57,11 +67,12 @@ class Scenario(BaseScenario):
 		self.datadir = '/home/flora/mdmi_data/' + str(resid) + '/'
 		self.reset_world(world, xds=xds, xis=xis)
 
-		for d in world.defenders:
-			with open(self.datadir + '/D' + str(d.id) + '/Itarg_pn.csv', 'w') as f:
-				f.write('t,i,e,pref\n')
-			with open(self.datadir + '/D' + str(d.id) + '/Itarg_op.csv', 'w') as f:
-				f.write('t,i,e,pref\n')
+		if world.mode == 'gazebo':
+			for d in world.defenders:
+				with open(self.datadir + '/D' + str(d.id) + '/Itarg_pn.csv', 'w') as f:
+					f.write('t,i,e,pref\n')
+				with open(self.datadir + '/D' + str(d.id) + '/Itarg_op.csv', 'w') as f:
+					f.write('t,i,e,pref\n')
 
 		return world
 
@@ -76,23 +87,25 @@ class Scenario(BaseScenario):
 				agent.max_speed = world.vd
 				agent.u_range = world.vd
 				agent.state.a = True
+				agent.iprev = None
 				
 				if xds is not None:
 					agent.state.p_pos = xds[agent.id]
-				# collide = True
-				# while collide:
-				# 	k = i if evend else None
-				# 	# agent.state.p_pos = np.random.uniform(low=0, high=5, size=(2,))
-				# 	if i == 0:
-				# 		agent.state.p_pos, r = self.generate_player_pos(world, 1., 2.5, k=k)
-				# 	else:
-				# 		if evend: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2.5, r=r, k=k)
-				# 		else: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2.5, k=k)
+				else:
+					collide = True
+					while collide:
+						k = i if evend else None
+						# agent.state.p_pos = np.random.uniform(low=0, high=5, size=(2,))
+						if i == 0:
+							agent.state.p_pos, r = self.generate_player_pos(world, 1., 2.5, k=k)
+						else:
+							if evend: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2.5, r=r, k=k)
+							else: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2.5, k=k)
 
-				# 	for other in world.agents[:i]: # agents 0-i are all defenders
-				# 		collide = self.is_collision(other, agent)
-				# 		if collide: break
-				# 	if i == 0: collide = False
+						for other in world.agents[:i]: # agents 0-i are all defenders
+							collide = self.is_collision(other, agent)
+							if collide: break
+						if i == 0: collide = False
 			else:				
 				agent.color = np.array([0.1, 1., 1.])
 				agent.max_speed = world.vi
@@ -103,17 +116,19 @@ class Scenario(BaseScenario):
 
 				if xis is not None:
 					agent.state.p_pos = xis[agent.id]
+				else:
+					collide = True
+					while collide:
+						agent.state.p_pos, _ = self.generate_player_pos(world, 3., 4.)
+						# agent.state.p_pos = np.random.uniform(low=0, high=5, size=(2,))
+						for other in world.agents[:i]:
+							collide = self.is_inrange(agent, other) if 'D' in other.name else self.is_collision(agent, other)
+							if collide: break
+
 				if actives is not None:
 					agent.state.a = actives[agent.id]
 				else:
 					agent.state.a = True
-				# collide = True
-				# while collide:
-				# 	agent.state.p_pos, _ = self.generate_player_pos(world, 3., 4.)
-				# 	# agent.state.p_pos = np.random.uniform(low=0, high=5, size=(2,))
-				# 	for other in world.agents[:i]:
-				# 		collide = self.is_inrange(agent, other) if 'D' in other.name else self.is_collision(agent, other)
-				# 		if collide: break
 
 			agent.state.p_vel = np.zeros(world.dim_p)
 			agent.state.c = np.zeros(world.dim_c)
@@ -123,6 +138,8 @@ class Scenario(BaseScenario):
 			
 			agent.size = .1
 			agent.initial_mass = 1.
+
+			# print(agent.name, agent.max_speed)
 
 		for defender in world.defenders:
 			world.update_neighbours_defender(defender)
@@ -209,8 +226,8 @@ class Scenario(BaseScenario):
 					xis[j] = np.array([x for x in xi])
 			return recurse(xis, actives, xd)
 
-		xis = [np.array([x for x in i.state.p_pos]) for i in world.intruders]
-		actives = [int(i.state.a) for i in world.intruders]
+		xis = [np.array([x for x in world.intruders[i].state.p_pos]) for i in iorder]
+		actives = [int(world.intruders[i].state.a) for i in iorder]
 		# print(actives)
 		xd = np.array([x for x in defender.state.p_pos])
 
@@ -232,24 +249,41 @@ class Scenario(BaseScenario):
 			dx = agent.mem.init_p_pos - agent.state.p_pos
 			dis = norm(dx)
 			u = 0.3*agent.u_range*dx/dis - agent.state.p_vel if dis > 0 else np.array([0., 0.])
-			# print(agent.name, dx/(dis+1e-4), u/(norm(u)+1e-4))
+			
 			return u
 
-		# decide the capture order
-		# orders = [order for order in itertools.permutations(list(agent.state.o))]
-		# values = [self.value_order(agent, list(order), world) for order in orders]
-		# k = values.index(max(values))
-		# icurr = orders[k][0]
-		maxe_ind = agent.state.f.index(max(agent.state.f))
-		icurr = agent.state.o[maxe_ind]
-		eff = agent.state.f[maxe_ind]
+		# select the current intruder by value
+		if agent.iselect_mode == 'value':
+			orders = [order for order in itertools.permutations(agent.state.o)]
+			values = [self.value_order(agent, order, world) for order in orders]
+			icurr = orders[values.index(max(values))][0]
 
-		if agent.state.s == 'pwn':
-			with open(self.datadir + '/D' + str(agent.id) + '/Itarg_pn.csv', 'a') as f:
-				f.write('%.2f,%s,%.6f,%s\n'%(world.t, 'I'+str(icurr), eff, state_to_prefstring(agent.state)))
-		if agent.state.s == 'opt':
-			with open(self.datadir + '/D' + str(agent.id) + '/Itarg_op.csv', 'a') as f:
-				f.write('%.2f,%s,%.6f,%s\n'%(world.t, 'I'+str(icurr), eff, state_to_prefstring(agent.state)))
+		elif agent.iselect_mode == 'emin':
+			if agent.iprev not in agent.state.o: # include self.iprev == None
+				maxe_ind = agent.state.f.index(min(agent.state.f))
+				icurr = agent.state.o[maxe_ind]
+				agent.iprev = icurr
+			else:
+				icurr = agent.iprev
+
+		elif agent.iselect_mode == 'emax':
+			if agent.iprev not in agent.state.o: # include self.iprev == None
+				maxe_ind = agent.state.f.index(max(agent.state.f))
+				icurr = agent.state.o[maxe_ind]
+				agent.iprev = icurr
+			else:
+				icurr = agent.iprev
+
+		eff = agent.state.f[agent.state.o.index(icurr)]
+
+
+		if world.mode == 'gazebo':
+			if agent.state.s == 'pwn':
+				with open(self.datadir + '/D' + str(agent.id) + '/Itarg_pn.csv', 'a') as f:
+					f.write('%.2f,%s,%.6f,%s\n'%(world.t, 'I'+str(icurr), eff, state_to_prefstring(agent.state)))
+			if agent.state.s == 'opt':
+				with open(self.datadir + '/D' + str(agent.id) + '/Itarg_op.csv', 'a') as f:
+					f.write('%.2f,%s,%.6f,%s\n'%(world.t, 'I'+str(icurr), eff, state_to_prefstring(agent.state)))
 
 		# compute the heading to capture intruder icurr
 		xi = world.intruders[icurr].state.p_pos

@@ -13,13 +13,13 @@ from math import cos, sin, pi
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
-from matplotlib import rc
-rc('text', usetex=True)
+# from matplotlib import rc
+# rc('text', usetex=True)
 
 import pandas as pd
 # from sklearn.linear_model import LinearRegression
 
-import cv2
+# import cv2
 import pickle
 
 from Envs.environment import MultiAgentEnv
@@ -36,11 +36,6 @@ scenario = scenarios.load('game_mdmi').Scenario()
 
 def evaluate_assignment(r, nd, ni, vd, vi, log_PATH=PATH, render_every=1e5):
 
-	# create environment and base log path 
-	world = scenario.make_world(r=r, nd=nd, ni=ni, vd=vd, vi=vi)
-	env = MultiAgentEnv(world, scenario.reset_world, scenario.reward_team,
-						scenario.observation, state_callback=scenario.state,
-						done_callback=scenario.done_callback_defender)
 	for Rd in [2,  3., 4., 5.]:
 		nstep = int((Rd-1)/.25)
 		for Ri in np.linspace(1, 1+.25*nstep, nstep+1):
@@ -52,19 +47,26 @@ def evaluate_assignment(r, nd, ni, vd, vi, log_PATH=PATH, render_every=1e5):
 
 			for i in range(MAX_EPISODES):
 
-				render = True if i%render_every == 0 else False
+				# render = True if i%render_every == 0 else False
+				render = False
 
 				i += i0 + 1
 				root_path = os.path.join(log_path, str(i))
 				if not os.path.exists(root_path): os.makedirs(root_path)
 
-				with open(root_path+'/config.pickle', 'wb') as f:
-					pickle.dump(env, f)
+				# with open(root_path+'/config.pickle', 'wb') as f:
+				# 	pickle.dump(env, f)
 				print('>>>>>>>>>>>> simulating episode %s >>>>>>>>>>>'%i)
 
 				# ---------------- prepare two environments and directories -------------#
-				s = env.reset(Rd=Rd, Ri=Ri, evend=True)
+				world = scenario.make_world(r=r, Rd=Rd, Ri=Ri, nd=nd, ni=ni, vd=vd, vi=vi, mode='simple')
+				env = MultiAgentEnv(world, scenario.reset_world, scenario.reward_team,
+									scenario.observation, state_callback=scenario.state,
+									done_callback=scenario.done_callback_defender)
 				env_ = deepcopy(env)
+				with open(root_path+'/config.pickle', 'wb') as f:
+					pickle.dump(env, f)
+				s = env.reset(evend=True)
 
 				path_ = os.path.join(root_path, 'negotiate')
 				path = os.path.join(root_path, 'knapsack')
@@ -184,7 +186,7 @@ def plot_traj(Rd, Ri, i, cases, res_path=PATH):
 		ifile = os.path.join(res_path, case) + '/' + f'No#{i}_info_' + case[0] + '.csv'
 		traj = pd.read_csv(tfile)
 		info = pd.read_csv(ifile)
-		print(info)
+		# print(info)
 
 		dxs = [name for name in traj.columns if 'D' in name and 'x' in name and 'v' not in name]
 		ixs = [name for name in traj.columns if 'I' in name and 'x' in name and 'v' not in name]
@@ -206,8 +208,11 @@ def plot_traj(Rd, Ri, i, cases, res_path=PATH):
 			plt.plot(traj[ix][0], traj[iy][0], color=env.world.intruders[i].color, marker='>', label=label)
 			plt.plot(traj[ix], traj[iy], color=env.world.intruders[i].color, linestyle=linestyle)
 
-			if info['tc'][i] is not None:
-				k = int(info['tc'][i]/env.world.dt)-1
+			# print(info['tc'][i], info['tc'][i] != 'None')
+			if info['tc'][i] != 'None':
+				# print('??????????????')
+				print(info['tc'][i])
+				k = int(float(info['tc'][i])/env.world.dt)-1
 				d = info['capD'][i]
 				plt.plot(traj[ix][k], traj[iy][k], color=env.world.intruders[i].color, marker='>')
 				plt.plot(traj[dxs[d]][k], traj[dys[d]][k], color=env.world.defenders[d].color, marker='o')
@@ -258,7 +263,7 @@ def plot_statistics(res_path=PATH):
 		e_n = data['e_ave:n'].to_numpy()
 		e_k = data['e_ave:k'].to_numpy()
 
-		print(i, len(tl_n))
+		# print(i, len(tl_n))
 
 		# print(len(np.where(tl_n<0)[0]))
 		# print(len(np.where(tl_k<0)[0]))
@@ -289,7 +294,7 @@ def plot_statistics(res_path=PATH):
 	# for i in range(len(Rds)):
 	# 	Rds[i] = [Rds[i]]*len(Ris[i])
 
-	# print(Rds, Ris)
+	print(Rds, Ris)
 
 	for i, (Rd, Ri, tc_n, tc_k, tl_n, tl_k, rc_n, rc_k, e_n, e_k, c) in enumerate(zip(Rds, Ris, tcs_n, tcs_k, tls_n, tls_k, rcs_n, rcs_k, es_n, es_k, colors)):
 		# print(i)
@@ -377,8 +382,8 @@ def plot_correlate(res_path=PATH):
 	plt.show()
 
 if __name__ == '__main__':
-	# evaluate_assignment(r=.3, nd=3, ni=6, vd=1., vi=.8, render_every=50)
-	# plot_traj(4, 1.75, 0, ['negotiate', 'knapsack'])	
+	# evaluate_assignment(r=.3, nd=3, ni=7, vd=.5, vi=.3, render_every=1e10)
+	# plot_traj(2, 1, 5, ['negotiate', 'knapsack'])	
 	# print('?????????')
-	# plot_statistics()	
-	plot_correlate()
+	plot_statistics()	
+	# plot_correlate()

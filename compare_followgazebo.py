@@ -23,32 +23,35 @@ world = scenario.make_world(r=params['r'], nd=params['nd'], ni=params['ni'],
 							vi=params['vi'], vd=params['vd'],
    	                 		Rd=params['Rt'], Ri=params['Ro'],
    	                 		xds=params['xds'], xis=params['xis'],
-   	                 		resid=resid)
+   	                 		resid=resid, iselect_mode=params['iselect_mode'])
 env = MultiAgentEnv(world, scenario.reset_world, 
 					observation_callback=scenario.observation,
 					state_callback=scenario.state, 
                     info_callback=None, 
                     done_callback=scenario.done_callback_defender)
 
-ts = np.linspace(tmin, tmax, 50)
-cmd_simple = replay_follow(env, np.linspace(tmin, tmax, 50), 
+ts = np.linspace(tmin, tmax, 100)
+cmd_simple = replay_follow(env, ts, 
 							scenario.dstrategy, states_gazebo)
 
+
+assign_gazebo, tc_gazebo = read_gazebo_assign('/Itarg.csv')
+assign_simple, tc_simple = read_gazebo_assign('/Itarg_pn.csv')
 # ###############################################################
 # |						Bellow are plots						|
 # ###############################################################
 
 # compare command velocity
-# compare_cmdv(np.linspace(tmin, tmax, 50), cmd_gazebo, cmd_simple)
+compare_cmdv(ts, cmd_gazebo, cmd_simple)
 
 # velocity and command velocity
-# velocity_response(np.linspace(tmin, tmax, 50), cmd_gazebo, states_gazebo)
+velocity_response(ts, cmd_gazebo, states_gazebo)
 
 # trajectory of gazebo and command velocity
-# compare_traj_and_v(ts, states_gazebo, cmd_simple, cap_gazebo, params)
+# print(ts)
+compare_traj_and_v(ts, states_gazebo, assign_simple, cap_gazebo, params, name='simple')
+compare_traj_and_v(ts, states_gazebo, assign_gazebo, cap_gazebo, params, name='gazebo')
 
 # plot assignment and efficiencies
-assign_gazebo, tc_gazebo = read_gazebo_assign('/Itarg.csv')
-assign_simple, tc_simple = read_gazebo_assign('/Itarg_pn.csv')
 plot_assign(assign_gazebo, cap_gazebo)
-# plot_assign(assign_simple, cap_gazebo)
+plot_assign(assign_simple, cap_gazebo)

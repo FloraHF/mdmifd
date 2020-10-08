@@ -61,6 +61,10 @@ def replay_fromstart(env, dstrategy, tmin):
 			break
 	# print('replay:', ts)
 
-	return { p: {k:interp1d(ts, states_simple[p][k]) 
+	out = { p: {k:interp1d(ts, states_simple[p][k]) 
 			 	for k in ['x', 'y']} 
-			 	for p in defenders+intruders}, ts[-1]
+			 	for p in defenders+intruders}
+	for p, s in out.items():
+		s.update({'tmin': tmin})
+
+	return out, ts[-1]

@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 from Envs.scenarios.game_mdmi.utils import prefstring_to_list
 
 # result file
-resid = 'res10'
+resid = 'res3'
 res_path = '/home/flora/mdmi_data/' + resid + '/'
 
 # find out players recorded, and sort by their id
@@ -23,16 +23,18 @@ def read_gazebo_param(res_path=res_path):
 		data = data.set_index('param').T
 		params[p] = data.to_dict('records')[0]
 		for k in params[p]:
-			if k != 'target:type' and k != 'id':
-				if k == 'ni' or k == 'nd':
-					params[p][k] = int(params[p][k])
-				else:
-					params[p][k] = float(params[p][k])
 			if 'target:' in k:
 				if 'type' in k:
 					params[p][k] = params[p][k]
 				else:
 					params[p][k] = float(params[p][k])
+			elif k != 'id' and k != 'iselect_mode':
+				if k == 'ni' or k == 'nd':
+					params[p][k] = int(params[p][k])
+				else:
+					params[p][k] = float(params[p][k])
+			else:
+				params[p][k] = params[p][k]
 
 	xds=[np.array([params[d]['x0'], params[d]['y0']]) for d in defenders]
 	xis=[np.array([params[i]['x0'], params[i]['y0']]) for i in intruders]
@@ -48,7 +50,8 @@ def read_gazebo_param(res_path=res_path):
 			'xis': xis,
 			'x0targ': params['D0']['target:x0'],
 			'y0targ': params['D0']['target:y0'],
-			'Rtarg': params['D0']['target:R']}
+			'Rtarg': params['D0']['target:R'],
+			'iselect_mode': params['D0']['iselect_mode']}
 
 # read players states
 def read_gazebo_state(res_path=res_path, tmin=0., tmax=100.):
@@ -61,7 +64,8 @@ def read_gazebo_state(res_path=res_path, tmin=0., tmax=100.):
 		tmin = max(min(t), tmin)
 		tmax = min(max(t), tmax)
 		# tmax = min(t[-1], tmax)
-		states_gazebo[p] = {k:interp1d(t, data[k].to_numpy()) for k in ['x', 'y', 'z', 'vx', 'vy']}
+		states_gazebo[p] = {k:interp1d(t, data[k].to_numpy(), fill_value='extrapolate') for k in ['x', 'y', 'z', 'vx', 'vy']}
+		states_gazebo[p].update({'tmin': t[0]})
 
 	return states_gazebo, tmin, tmax
 
@@ -111,20 +115,21 @@ def read_gazebo_assign(data_file, res_path=res_path, toffset=0):
 		e = data['e'].to_numpy()
 		pref = [prefstring_to_list(pstr) for pstr in data['pref']]
 		assign[d] = {'t': t,
-						'i': i,
-						'e': e,
-						'pref': pref
-						}
+					 'i': i,
+					 'e': e,
+					 'pref': pref,
+					 'approx': interp1d(t, i)}
 		tc = max(tc, t[-1])
 	return assign, tc
 
 if __name__ == '__main__':
-	p = read_gazebo_param()
-	# print(p)
-	s, tmin, tmax = read_gazebo_state()
-	s, tmin, tmax = read_gazebo_cmd()
-	cap = read_gazebo_cap()
-	ass, tc = read_gazebo_assign()
-	# print(ass)
+	# p = read_gazebo_param()
+	# # print(p)
+	# s, tmin, tmax = read_gazebo_state()
+	# s, tmin, tmax = read_gazebo_cmd()
+	# cap = read_gazebo_cap()
+	ass, tc = read_gazebo_assign('/Itarg_pn.csv')
+	for d, a in ass.items():
+		print(a['t'])
 
 
