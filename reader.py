@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 from Envs.scenarios.game_mdmi.utils import prefstring_to_list
 
 # result file
-resid = 'res5'
+resid = 'res10'
 res_path = '/home/flora/mdmi_data/' + resid + '/'
 
 # find out players recorded, and sort by their id
@@ -87,12 +87,16 @@ def read_gazebo_cap(res_path=res_path, tmax=100):
 		cap_data = pd.read_csv(res_path + i + '/Dcap.csv')
 		ent_data = pd.read_csv(res_path + i + '/Tent.csv')
 		if not ent_data['t'].empty:
+			# print(i, 'enters at', ent_data['t'].values[-1])
 			cap_gazebo[i]['tent'] = ent_data['t'].values[-1]
 			maxte = max(maxte, ent_data['t'].values[-1])
-		if not cap_data['t'].empty:
-			cap_gazebo[i]['dcap'] = cap_data['d'].values[-1]
-			cap_gazebo[i]['tcap'] = cap_data['t'].values[-1]
-			maxte = max(maxte, cap_data['t'].values[-1])
+		else:
+			if not cap_data['t'].empty:
+				# print(i, 'is captured at', cap_data['t'].values[-1])
+				cap_gazebo[i]['dcap'] = cap_data['d'].values[-1]
+				cap_gazebo[i]['tcap'] = cap_data['t'].values[-1]
+				maxte = max(maxte, cap_data['t'].values[-1])
+		# print(maxte)
 	return cap_gazebo, min(maxte, tmax)
 
 

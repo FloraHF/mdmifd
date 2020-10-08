@@ -13,6 +13,7 @@ def replay_follow(env, ts, dstrategy, states_gazebo):
 	cmd_simple = {d:{'vx':[], 'vy':[]} for d in defenders}
 
 	for t in ts:
+		# print(t)
 		xds = [np.array([states_gazebo[d]['x'](t), states_gazebo[d]['y'](t)]) for d in defenders]
 		xis = [np.array([states_gazebo[i]['x'](t), states_gazebo[i]['y'](t)]) for i in intruders]
 		actives = [states_gazebo[i]['z'](t)>0.5 for i in intruders]

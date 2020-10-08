@@ -9,9 +9,13 @@ from plotter import plot_assign, compare_cmdv, velocity_response, compare_traj_a
 
 # read parameters
 states_gazebo, tmin, tmax  = read_gazebo_state()
+# print(tmin, tmax)
 cmd_gazebo, tmin, tmax  = read_gazebo_cmd(tmin=tmin, tmax=tmax)
+# print(tmin, tmax)
 cap_gazebo, tmax = read_gazebo_cap(tmax=tmax)
+# print(tmin, tmax)
 params = read_gazebo_param()
+# print(tmin, tmax)
 
 # replay the gazebo simulation
 scenario = scenarios.load('game_mdmi').Scenario()
@@ -38,13 +42,13 @@ cmd_simple = replay_follow(env, np.linspace(tmin, tmax, 50),
 # compare_cmdv(np.linspace(tmin, tmax, 50), cmd_gazebo, cmd_simple)
 
 # velocity and command velocity
-velocity_response(np.linspace(tmin, tmax, 50), cmd_gazebo, states_gazebo)
+# velocity_response(np.linspace(tmin, tmax, 50), cmd_gazebo, states_gazebo)
 
 # trajectory of gazebo and command velocity
 # compare_traj_and_v(ts, states_gazebo, cmd_simple, cap_gazebo, params)
 
 # plot assignment and efficiencies
-# assign_gazebo, tc_gazebo = read_gazebo_assign('/Itarg.csv')
-# assign_simple, tc_simple = read_gazebo_assign('/Itarg_pn.csv')
-# plot_assign(assign_gazebo, cap_gazebo)
+assign_gazebo, tc_gazebo = read_gazebo_assign('/Itarg.csv')
+assign_simple, tc_simple = read_gazebo_assign('/Itarg_pn.csv')
+plot_assign(assign_gazebo, cap_gazebo)
 # plot_assign(assign_simple, cap_gazebo)
