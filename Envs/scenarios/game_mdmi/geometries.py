@@ -33,6 +33,7 @@ class DominantRegion(object):
 
 	def level(self, x):
 		# offset: the distance the defender travels
+		inDR = -1 # always true when self.xds = []
 		for i, xd in enumerate(self.xds):
 			if i == 0:
 				inDR = self.a*dist(x, self.xi) - self.offset - (dist(x, xd) - self.r)

@@ -113,7 +113,7 @@ def knapsack_assign(world, firstassign=False, sparse=False):
 
 	# declare
 	lb = np.floor(world.ni/world.nd)
-	ub = np.ceil(world.ni/world.nd)+0
+	ub = min(3, np.ceil(world.ni/world.nd)+0)
 	Dassign = [DAssignment(d.id, ub) for d in world.defenders]
 	Iassign = [IAssignment(i.id) for i in world.intruders]
 	eff = [[None for j in world.defenders] for i in world.intruders]
@@ -199,7 +199,7 @@ def negotiate_assign(world, firstassign=False, sparse=False):
 			return
 
 	# declare
-	ub = int(np.ceil(world.ni/world.nd))
+	ub = min(3, int(np.ceil(world.ni/world.nd)))
 	Dcand = [[] for d in range(world.nd)]
 	Dpin = [None for d in range(world.nd)]
 	Dassign = [[] for _ in range(world.nd)]

@@ -24,7 +24,7 @@ class Scenario(BaseScenario):
 	def make_world(self, r=.6, 
 					nd=1, ni=1, 
 					vd=1., vi=.8, 
-					Rd=5., Ri=5., 
+					Rt=5., Ro=5., 
 					xds=None, xis=None, 
 					resid=1, 
 					iselect_mode='value',
@@ -49,14 +49,16 @@ class Scenario(BaseScenario):
 				agent.r = r
 				agent.done_callback = self.done_callback_defender
 				agent.silent = False
-				agent.Rd = Rd
-				agent.Ri = Ri				
+				agent.Rd = Rt
+				agent.Ri = Ro
 			else:
 				agent.name = 'agent I%d' % (i-world.nd)
 				agent.done_callback = self.done_callback_intruder
 				agent.enter_callback = self.is_enter
 				agent.capture_callback = self.is_capture				
-				agent.silent = True					
+				agent.silent = True		
+				# agent.Rd = Ro
+				# agent.Ri = Rt
 
 		world.r = world.intruders[0].size + world.defenders[0].r
 		world.target = CircleTarget(1.25)
@@ -97,10 +99,10 @@ class Scenario(BaseScenario):
 						k = i if evend else None
 						# agent.state.p_pos = np.random.uniform(low=0, high=5, size=(2,))
 						if i == 0:
-							agent.state.p_pos, r = self.generate_player_pos(world, 1., 2.5, k=k)
+							agent.state.p_pos, r = self.generate_player_pos(world, 1., 2, k=k)
 						else:
-							if evend: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2.5, r=r, k=k)
-							else: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2.5, k=k)
+							if evend: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2, r=r, k=k)
+							else: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2, k=k)
 
 						for other in world.agents[:i]: # agents 0-i are all defenders
 							collide = self.is_collision(other, agent)
@@ -119,7 +121,7 @@ class Scenario(BaseScenario):
 				else:
 					collide = True
 					while collide:
-						agent.state.p_pos, _ = self.generate_player_pos(world, 3., 4.)
+						agent.state.p_pos, _ = self.generate_player_pos(world, 2., 4.)
 						# agent.state.p_pos = np.random.uniform(low=0, high=5, size=(2,))
 						for other in world.agents[:i]:
 							collide = self.is_inrange(agent, other) if 'D' in other.name else self.is_collision(agent, other)
@@ -305,7 +307,11 @@ class Scenario(BaseScenario):
 		for D in world.agents:
 			if 'D' in D.name:
 				xds.append(np.array([x for x in D.state.p_pos]))
+		# print(xds)
+		# for D in agent.neigh_d:
+		# 	xds.append(np.array([x for x in world.defenders[D].state.p_pos]))
 		vd = world.agents[0].max_speed
+
 		if agent.state.a:
 			dr = DominantRegion(world.r, vd/agent.max_speed, agent.state.p_pos, xds, offset=0)
 			xw = world.target.deepest_point_in_dr(dr)
