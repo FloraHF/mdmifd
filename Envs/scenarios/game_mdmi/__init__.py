@@ -148,6 +148,9 @@ class Scenario(BaseScenario):
 		for intruder in world.intruders:
 			world.update_neighbours_intruder(intruder)
 
+	# def set_eselect_mode(self, world, mode):
+		
+
 	def generate_player_pos(self, world, lb, ub, r=None, k=None):
 		# world.target.state.p_pos
 		if r is None: r = np.random.uniform(lb*world.target.size, ub*world.target.size)

@@ -181,6 +181,10 @@ class Game(World): # @FloraFu 20200729
     def intruders(self):
         return [agent for agent in self.agents if 'I' in agent.name]
 
+    def set_iselect_mode(self, mode):
+        for d in self.defenders:
+            d.iselect_mode = mode
+
     def update_world_state(self):
         # update defenders' memories
         for defender in self.defenders:

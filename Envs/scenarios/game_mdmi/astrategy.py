@@ -186,7 +186,7 @@ def knapsack_assign(world, firstassign=False, sparse=False):
 	return nassd, et
 
 
-def negotiate_assign(world, firstassign=False, sparse=False):
+def negotiate_assign(world, firstassign=False, sparse=False, aug=False):
 	# new assignment only when some intruder is captured
 	if sparse:
 		if firstassign: 
@@ -218,7 +218,7 @@ def negotiate_assign(world, firstassign=False, sparse=False):
 		Dpin[d] = 0 if Dcand[d].size <= ub else -ub
 		Dassign[d] = [n.value for n in Dcand[d].nodeat(Dpin[d]).iternext()] if Dcand[d].size > 0 else []
 
-	def recusive(world=world, Dassign=Dassign, Dpin=Dpin, es=es, Dcand=Dcand):
+	def recusive(world=world, Dassign=Dassign, Dpin=Dpin, es=es, Dcand=Dcand, aug=aug):
 		nconflict = 0
 		for j, D in enumerate(world.defenders):
 			nremoved = 0

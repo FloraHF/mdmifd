@@ -208,6 +208,149 @@ def evaluate_game(r, nd, ni, vd, vi, log_PATH=PATH, render_every=1e5, n_ep=MAX_E
 													e_ave,
 													e_ave_])))+'\n')
 
+
+def evaluate_iselect(r, nd, ni, vd, vi, log_PATH=PATH, render_every=1e5, n_ep=MAX_EPISODES):
+
+	for Rt in [2,  3., 4., 5.]:
+		nstep = int((Rt-1)/.25)
+		for Ro in np.linspace(1, 1+.25*nstep, nstep+1):
+
+			log_path = os.path.join(log_PATH, 'iselect', 'Rd=%d_Ri=%d'%(Rt*100, Ro*100))
+			if not os.path.exists(log_path): os.makedirs(log_path)
+			existings = [int(i) for i in next(os.walk(log_path))[1]]
+			i0 = -1 if not existings else max(existings) # the last existing sample
+
+			for i in range(n_ep):
+
+				# render = True if i%render_every == 0 else False
+				render = False
+
+				i += i0 + 1
+				root_path = os.path.join(log_path, str(i))
+				if not os.path.exists(root_path): os.makedirs(root_path)
+
+				# with open(root_path+'/config.pickle', 'wb') as f:
+				# 	pickle.dump(env, f)
+				print('>>>>>>>>>>>> simulating episode %s >>>>>>>>>>>'%i)
+
+				# ---------------- prepare two environments and directories -------------#
+				world = scenario.make_world(r=r, Rt=Rt, Ro=Ro, nd=nd, ni=ni, vd=vd, vi=vi, 
+											iselect_mode='value', mode='simple')
+				env = MultiAgentEnv(world, scenario.reset_world, scenario.reward_team,
+									scenario.observation, state_callback=scenario.state,
+									done_callback=scenario.done_callback_defender)
+				env.reset(evend=True)				
+				env_ = deepcopy(env)
+				env_.world.set_iselect_mode('emin')
+
+				with open(root_path+'/config.pickle', 'wb') as f:
+					pickle.dump(env, f)
+				
+				path = os.path.join(root_path, 'value')
+				path_ = os.path.join(root_path, 'emin')
+				if not os.path.exists(path):
+					os.makedirs(path)
+				if not os.path.exists(path_):
+					os.makedirs(path_)
+
+				# ------------------- simulation under iselect_mode = value -----------------#
+				imgArray = []
+				print('>>>>>>>>>>>> iselect_mode = value')
+				et = 0.
+				for j in range(MAX_EP_STEPS):
+
+					if render:
+						imgdata = env.render()
+						if j == 0: height, width, layers = imgdata[0].shape
+						imgArray.append(cv2.cvtColor(imgdata[0], cv2.COLOR_BGR2RGB))		
+
+					_, e = negotiate_assign(env.world, firstassign=(j == 0))
+					et += e
+					# print('!!!!!!!!', e)
+					actions = [scenario.dstrategy(d, env.world) for d in env.world.defenders]
+					obs_n, reward_n, done_n, info_n = env.step(actions)
+
+					with open(path+'/'+f'No#{i}_traj_value.csv', 'a') as f:
+						if j == 0:
+							f.write(','.join(['t'] + ['D%s:x,D%s:y'%(dd, dd) for dd in range(env.world.nd)] +\
+											 ['I%s:x,I%s:y'%(ii, ii) for ii in range(env.world.ni)] +\
+											 ['I%s:active'%ii for ii in range(env.world.ni)]+ \
+											 ['eff']) + '\n')
+						f.write(','.join([str(env.world.t)]+list(map(str, env.get_state())) + ['%.5f'%e])+'\n')
+
+					if all(done_n):
+						break
+				e_ave = et/j
+				# print('env step:', j)
+
+				with open(path+'/'+f'No#{i}_info_value.csv', 'a') as f:
+					f.write('i,tc,te,capD\n')
+					for I in env.world.intruders:
+						d = I.state.n[0] if I.state.n else -1
+						f.write(','.join(list(map(str, [I.id, I.state.tc, I.state.te, d])))+'\n')
+					
+				if render:
+					out = cv2.VideoWriter(path+'/'+f'No#{i}_traj_value.mp4',
+										  cv2.VideoWriter_fourcc(*'mp4v'), 5, (width,height))
+					for k in range(len(imgArray)):
+						out.write(imgArray[k])
+					out.release()
+				env.close()					
+
+				# -------------------- simulation under iselect_mode = emin --------------------#
+				imgArray = []
+				print('>>>>>>>>>>>> iselect_mode = emin')
+				et_ = 0
+				for j in range(MAX_EP_STEPS):
+
+					if render:
+						imgdata = env_.render()
+						if j == 0: height, width, layers = imgdata[0].shape
+						imgArray.append(cv2.cvtColor(imgdata[0], cv2.COLOR_BGR2RGB))
+
+					_, e = negotiate_assign(env_.world, firstassign=(j == 0))
+					et_ += e
+					actions = [scenario.dstrategy(d, env_.world) for d in env_.world.defenders]
+					obs_n, reward_n, done_n, info_n = env_.step(actions)
+
+					with open(path_+'/'+f'No#{i}_traj_emin.csv', 'a') as f:
+						if j == 0:
+							f.write(','.join(['t'] + ['D%s:x,D%s:y'%(dd, dd) for dd in range(env_.world.nd)] +\
+											 ['I%s:x,I%s:y'%(ii, ii) for ii in range(env_.world.ni)] +\
+											 ['I%s:active'%ii for ii in range(env.world.ni)]+ \
+											 ['eff'])+'\n')
+						f.write(','.join([str(env_.world.t)]+list(map(str, env_.get_state())) + ['%.5f'%e])+'\n')
+
+					if all(done_n):
+						break
+				e_ave_ = et_/j
+
+				with open(path_+'/'+f'No#{i}_info_emin.csv', 'a') as f:
+					f.write('i,tc,te,capD\n')
+					for I in env_.world.intruders:
+						d = I.state.n[0] if I.state.n else -1
+						f.write(','.join(list(map(str, [I.id, I.state.tc, I.state.te, d])))+'\n')
+
+				if render:
+					out = cv2.VideoWriter(path_+'/'+f'No#{i}_traj_emin.mp4',
+										  cv2.VideoWriter_fourcc(*'mp4v'), 5, (width,height))
+					for k in range(len(imgArray)):
+						out.write(imgArray[k])
+					out.release()
+				env_.close() 
+
+				# --------------------------- record statistics -----------------------#
+				with open(log_path+'/statistics.csv', 'a') as f:
+					if i == 0:
+						f.write('tc:value,tc:emin,tlevel:value,tlevel:emin,e_ave:value,e_ave:emin\n')
+					f.write(','.join(list(map(str, [env.world.t, 
+													env_.world.t, 
+													scenario.value(env.world), 
+													scenario.value(env_.world),
+													e_ave,
+													e_ave_])))+'\n')
+
+
 def plot_traj(Rd, Ri, i, cases, res_path=PATH):
 
 	res_path = os.path.join(res_path, 'Rd=%d_Ri=%d'%(Rd*100, Ri*100), str(i))
@@ -546,6 +689,7 @@ def plot_correlate(res_path=PATH):
 if __name__ == '__main__':
 	# evaluate_assignment(r=.3, nd=3, ni=12, vd=1., vi=.8)
 	# evaluate_game(r=.3, nd=3, ni=12, vd=1., vi=.8, render_every=1e10)
+	evaluate_iselect(r=.3, nd=3, ni=12, vd=1., vi=.8, render_every=1e10)
 	# plot_traj(5, 4, 218, ['negotiate', 'knapsack'])	
 	# print('?????????')
 	# plot_game_statistics()	
