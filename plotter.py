@@ -2,14 +2,16 @@ import numpy as np
 from math import sqrt, pi, sin, cos
 import matplotlib.pyplot as plt
 # from matplotlib.patches import Circle
+from matplotlib import rc
+rc('text', usetex=True)
 
 from Envs.scenarios.game_mdmi import dcolors
 from reader import res_path
 
 lw = 3.
-ms = 10.
-ms_traj = 10.
-fs = 20.
+ms = 12.
+ms_traj = 12.
+fs = 36.
 traj_size = (10,10)
 plot_size = (12,5)
 
@@ -17,6 +19,7 @@ plot_size = (12,5)
 # |							helper funcs							|
 #####################################################################
 def process_cap(ts, cap, param):
+	# print('cap\n', cap)
 	# when an intruder is captured, highlight locations of all the players
 	dcap = {'D'+str(d):{'t':[], 'i':[]} for d in range(param['nd'])}
 	for i, info in cap.items():
@@ -25,12 +28,15 @@ def process_cap(ts, cap, param):
 			dcap[info['dcap']]['i'].append(i)
 
 	# extract time from dcap
-	twpts = [ts[0]] + [data['tcap'] for i, data in cap.items() if data['dcap'] is not None]
+	twpts = [ts[0]] + [data['tcap'] for i, data in cap.items() if data['dcap'] is not None] + [ts[-1]]
 
+	# print('dcap\n', dcap)
+	# print('twpts\n', twpts)
 	return dcap, twpts
 
 def process_assign(ts, assign, param):
 	# rearrange assignment in the intruders perspective
+	# print('assign\n', assign)
 	iass = {'I'+str(i):{'t':[], 'd':[]} for i in range(param['ni'])}
 	for t in ts:
 		for d, ass in assign.items():
@@ -43,52 +49,74 @@ def process_assign(ts, assign, param):
 			except:
 				pass
 
+	# print('assign\n', iass)
 	# rearrange iass by time segment for different assign
 	iass_seg = {'I'+str(i):{'t':[], 'd':[]} for i in range(param['ni'])}
 	for i, ass in iass.items():
-		iass_seg[i]['t'].append([ass['t'][0]])
-		iass_seg[i]['d'].append(ass['d'][0])
-		for t, d in zip(ass['t'][1:], ass['d'][1:]):
-			if d != iass_seg[i]['d'][-1]:
+		if ass['t']:
+			iass_seg[i]['t'].append([ass['t'][0]])
+			iass_seg[i]['d'].append(ass['d'][0])
+			for t, d in zip(ass['t'][1:], ass['d'][1:]):
 				iass_seg[i]['t'][-1].append(t)
-				iass_seg[i]['t'].append([t])
-				iass_seg[i]['d'].append(d)
-			else:
-				iass_seg[i]['t'][-1].append(t)
-
+				if d != iass_seg[i]['d'][-1]:
+					iass_seg[i]['t'].append([t])
+					iass_seg[i]['d'].append(d)
+					
+	# print('iass_seg\n', iass_seg)
 	return iass_seg
 
 def plot_traj(ts, states, iass_seg, dcap, twpts, param, linestyle='solid'):
 
 	for p, s in states.items():
 		# print(s)
-		if 'D' in p:
+		if 'D' in p: # defenders' trajectories
 			plt.plot([s['x'](t) for t in [s['tmin']]+list(ts)], 
 					 [s['y'](t) for t in [s['tmin']]+list(ts)], 
 					 color=dcolors[int(p[1:])], label=p, linewidth=lw, linestyle=linestyle)
 		else:
-			tseg = [s['tmin']] + \
-				   [t for t in ts if t < iass_seg[p]['t'][0][0]+0.1] # in case not assigned at the beginning
-			plt.plot([s['x'](t) for t in tseg], [s['y'](t) for t in tseg], 
-					 color='c', linewidth=lw, linestyle=linestyle,
-					 label=p)
-			for tseg, d in zip(iass_seg[p]['t'], iass_seg[p]['d']):
+			# print(p)
+			if iass_seg[p]['t']: # if intruder p has been assigned to some defenders
+				# first segment
+				tseg = [s['tmin']] + \
+					   [t for t in ts if t < iass_seg[p]['t'][0][0]+0.1] # in case not assigned at the beginning
 				plt.plot([s['x'](t) for t in tseg], [s['y'](t) for t in tseg], 
-						 color=dcolors[int(d[1:])], linewidth=lw, linestyle=linestyle,
+						 color='c', linewidth=lw, linestyle=linestyle,
+						 label=p)
+				# the rest of the segments
+				for tseg, d in zip(iass_seg[p]['t'], iass_seg[p]['d']):
+					plt.plot([s['x'](t) for t in tseg], [s['y'](t) for t in tseg], 
+							 color=dcolors[int(d[1:])], linewidth=lw, linestyle=linestyle,
+							 label=p)
+			else: # if the intruder is not assigned at all
+				plt.plot([s['x'](t) for t in ts], [s['y'](t) for t in ts], 
+						 color='c', linewidth=lw, linestyle=linestyle,
 						 label=p)
 
 		if twpts is not None:		
 			for tc in twpts:
-
 				if 'D' in p:
 					plt.plot(s['x'](tc), s['y'](tc), color=dcolors[int(p[1:])], marker='o', markersize=ms_traj, linewidth=lw)
 					for t in dcap[p]['t']:
 						picon = plt.Circle([s['x'](t), s['y'](t)], radius=param['r'], color=dcolors[int(p[1:])], alpha=.05)
 						plt.gca().add_patch(picon)				
 				else:
-					for tseg, d in zip(iass_seg[p]['t'], iass_seg[p]['d']):
+					if iass_seg[p]['t']:
+						# first segment
+						tseg = [s['tmin']] + \
+							   [t for t in ts if t < iass_seg[p]['t'][0][0]+0.1] # in case not assigned at the beginning
 						if tseg[0] <= tc <= tseg[-1]:
-							plt.plot(s['x'](tc), s['y'](tc), color=dcolors[int(d[1:])], marker='>', markersize=ms_traj, linewidth=lw)
+							ttemp = [abs(tc-tt) for tt in tseg]
+							tc = tseg[ttemp.index(min(ttemp))] # this is to make sure that the markers are on the trajectory
+							plt.plot(s['x'](tc), s['y'](tc), color='c', 
+									marker='>', markersize=ms_traj, linewidth=lw)
+						# other segments				
+						for tseg, d in zip(iass_seg[p]['t'], iass_seg[p]['d']):
+							if tseg[0] <= tc <= tseg[-1]:
+								ttemp = [abs(tc-tt) for tt in tseg]
+								tc = tseg[ttemp.index(min(ttemp))] # this is to make sure that the markers are on the trajectory
+								plt.plot(s['x'](tc), s['y'](tc), color=dcolors[int(d[1:])], marker='>', markersize=ms_traj, linewidth=lw)
+					else:
+						plt.plot(s['x'](tc), s['y'](tc), color='c', marker='>', markersize=ms_traj, linewidth=lw)
 
 def plot_target(param):
 	ks = np.linspace(.5*pi, 1.5*pi, 25)
@@ -122,8 +150,8 @@ def plot_assign(assign, cap):
 	plt.grid()
 	plt.gca().tick_params(axis='both', which='major', labelsize=fs)
 	plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
-	plt.ylabel('y(m)', fontsize=fs)
-	plt.xlabel('t(s)', fontsize=fs)
+	plt.ylabel(r'$y(m)$', fontsize=fs)
+	plt.xlabel(r'$t(s)$', fontsize=fs)
 	plt.show()
 
 # def compare_traj(tsg, tss, states_gazebo, states_simple, cap, param):
@@ -145,10 +173,11 @@ def compare_traj(ts_gazebo, states_gazebo, assign_gazebo,
 	plt.grid()
 	plt.gca().tick_params(axis='both', which='major', labelsize=fs)
 	plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
-	plt.xlabel('x(m)', fontsize=fs)
-	plt.ylabel('y(m)', fontsize=fs)
-	plt.savefig(res_path+'trajectory_samestart.jpg')
-	plt.close()
+	plt.xlabel(r'$x(m)$', fontsize=fs)
+	plt.ylabel(r'$y(m)$', fontsize=fs)
+	plt.show()
+	# plt.savefig(res_path+'trajectory_samestart.jpg')
+	# plt.close()
 
 
 def compare_traj_and_v(ts, states, assign, cap, param, name='gazebo'):
@@ -164,11 +193,12 @@ def compare_traj_and_v(ts, states, assign, cap, param, name='gazebo'):
 	plt.grid()
 	plt.gca().tick_params(axis='both', which='major', labelsize=fs)
 	plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
-	plt.xlabel('x(m)', fontsize=fs)
-	plt.ylabel('y(m)', fontsize=fs)
-	# plt.show()
-	plt.savefig(res_path+'trajectory_'+name+'.jpg')
-	plt.close()
+	plt.xlabel(r'$x(m)$', fontsize=fs)
+	plt.ylabel(r'$y(m)$', fontsize=fs)
+	# plt.legend(fontsize=fs)
+	plt.show()
+	# plt.savefig(res_path+'trajectory_'+name+'.jpg')
+	# plt.close()
 
 def compare_cmdv(ts, cmd_gazebo, cmd_simple):
 

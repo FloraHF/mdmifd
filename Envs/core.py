@@ -121,6 +121,8 @@ class Agent(Entity):
 
         self.neigh_i = []
         self.neigh_d = [] # neighbours within sensing range, Flora Fu @20200805
+
+        # print('from agent', self.size)
         
 
 # multi-agent world

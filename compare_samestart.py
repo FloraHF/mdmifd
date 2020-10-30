@@ -11,13 +11,14 @@ from plotter import plot_assign, compare_traj
 states_gazebo, tmin, tmax  = read_gazebo_state()
 cmd_gazebo, tmin, tmax  = read_gazebo_cmd(tmin=tmin, tmax=tmax)
 cap_gazebo, tmax = read_gazebo_cap(tmax=tmax)
+print(cap_gazebo)
 params = read_gazebo_param()
 
 # replay the gazebo simulation
 scenario = scenarios.load('game_mdmi').Scenario()
 world = scenario.make_world(r=params['r'], nd=params['nd'], ni=params['ni'], 
 							vi=params['vi'], vd=params['vd'],
-   	                 		Rd=params['Rt'], Ri=params['Ro'],
+   	                 		Rt=params['Rt'], Ro=params['Ro'],
    	                 		xds=params['xds'], xis=params['xis'],
                     		resid=resid)
 env = MultiAgentEnv(world, scenario.reset_world, 

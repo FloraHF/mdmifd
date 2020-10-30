@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 from Envs.scenarios.game_mdmi.utils import prefstring_to_list
 
 # result file
-resid = 'res3'
+resid = 'res_00_05_value'
 res_path = '/home/flora/mdmi_data/' + resid + '/'
 
 # find out players recorded, and sort by their id

@@ -41,6 +41,8 @@ class Scenario(BaseScenario):
 
 		# add agents
 		world.agents = [Agent(d) for d in range(world.nd)] + [Agent(i) for i in range(world.ni)]
+		# for a in world.agents:
+		# 	print('in world', a.size)		
 		for i, agent in enumerate(world.agents):
 			# print(agent)
 			if i < world.nd:
@@ -59,6 +61,7 @@ class Scenario(BaseScenario):
 				agent.silent = True		
 				# agent.Rd = Ro
 				# agent.Ri = Rt
+			# agent.size = 0
 
 		world.r = world.intruders[0].size + world.defenders[0].r
 		world.target = CircleTarget(1.25)
@@ -96,6 +99,7 @@ class Scenario(BaseScenario):
 				else:
 					collide = True
 					while collide:
+						# print(i, 'new position due to collision')
 						k = i if evend else None
 						# agent.state.p_pos = np.random.uniform(low=0, high=5, size=(2,))
 						if i == 0:
@@ -105,8 +109,11 @@ class Scenario(BaseScenario):
 							else: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2, k=k)
 
 						for other in world.agents[:i]: # agents 0-i are all defenders
+							# print('generating world', other.size)
 							collide = self.is_collision(other, agent)
-							if collide: break
+							if collide: 
+								# print(other.state.p_pos, agent.state.p_pos)
+								break
 						if i == 0: collide = False
 			else:				
 				agent.color = np.array([0.1, 1., 1.])
@@ -121,9 +128,11 @@ class Scenario(BaseScenario):
 				else:
 					collide = True
 					while collide:
+						# print(i, 'new position due to collision')
 						agent.state.p_pos, _ = self.generate_player_pos(world, 2., 4.)
 						# agent.state.p_pos = np.random.uniform(low=0, high=5, size=(2,))
 						for other in world.agents[:i]:
+							# print(other.size)
 							collide = self.is_inrange(agent, other) if 'D' in other.name else self.is_collision(agent, other)
 							if collide: break
 
@@ -138,7 +147,7 @@ class Scenario(BaseScenario):
 			agent.mem.n = []
 			agent.mem.init_p_pos = np.array([x for x in agent.state.p_pos])
 			
-			agent.size = .1
+			# agent.size = .1
 			agent.initial_mass = 1.
 
 			# print(agent.name, agent.max_speed)
@@ -198,6 +207,7 @@ class Scenario(BaseScenario):
 		delta_pos = agent1.state.p_pos - agent2.state.p_pos
 		dist = np.sqrt(np.sum(np.square(delta_pos)))
 		dist_min = agent1.size + agent2.size
+		# print(agent1.name, agent1.size, agent2.name, agent2.size)
 		return True if dist < dist_min else False
 
 	def dist_calc(self, agent1, agent2):

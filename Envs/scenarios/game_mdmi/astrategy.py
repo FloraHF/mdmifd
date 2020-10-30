@@ -185,7 +185,6 @@ def knapsack_assign(world, firstassign=False, sparse=False):
 	
 	return nassd, et
 
-
 def negotiate_assign(world, firstassign=False, sparse=False, aug=False):
 	# new assignment only when some intruder is captured
 	if sparse:
@@ -234,6 +233,101 @@ def negotiate_assign(world, firstassign=False, sparse=False, aug=False):
 							Dassign[j].remove(n_i)
 							nremoved += 1
 							break
+
+			for k in range(nremoved):
+				if Dcand[j].nodeat(Dpin[j]).prev is not None:
+					Dassign[j] = [Dcand[j].nodeat(Dpin[j]).prev.value] + Dassign[j]
+					Dpin[j] -= 1
+
+			nconflict += nremoved
+		return nconflict > 0
+
+	conflict = True
+	while conflict:
+		conflict = recusive()	
+
+	et = 0.
+	nassd = 0
+	for d, (defender, assign) in enumerate(zip(world.defenders, Dassign)):
+		defender.state.o = assign
+		defender.state.f = [es[d][i] for i in assign]
+		defender.state.s = 'pwn'
+		# for k, e in zip(Dcand[d], es[d]):
+			# print(k, e)
+		# print('    '.join(['(%s, %.3f)'%(k, es[d][k]) for k in Dcand[d]][::-1]))
+		for i in assign:
+			et += es[d][i]
+			nassd += 1
+	# print('---------------------------------------------------')
+
+	return nassd, et
+
+
+def augmented_negotiation(world, firstassign=False, sparse=False, aug=False):
+	# new assignment only when some intruder is captured
+	if sparse:
+		if firstassign: 
+			rassign = True
+		else:
+			rassign = False
+			for intruder in world.intruders:
+				rassign = rassign or intruder.mem.e != intruder.state.e or intruder.mem.n != intruder.state.n
+		if not rassign:
+			return
+
+	# declare
+	ub = min(3, int(np.ceil(world.ni/world.nd)))
+	Dcand = [[] for d in range(world.nd)]
+	Dpin = [None for d in range(world.nd)]
+	Dassign = [[] for _ in range(world.nd)]
+	Dhist = [dict() for _ in range(world.nd)] # for augmented PN
+	es = [[None for _ in range(world.ni)] for _ in range(world.nd)]
+
+	for d, D in enumerate(world.defenders):
+		temp = []
+		for i in D.neigh_i:
+			e = efficiency(D.state.p_pos, world.intruders[i].state.p_pos, 
+						   world.target, world.r, 
+						   D.max_speed/world.intruders[i].max_speed)
+			es[d][i] = e
+			temp.append((i, e))
+
+		Dcand[d] = dllist([i for i, e in sorted(temp, key=lambda x: x[1])])
+		Dpin[d] = 0 if Dcand[d].size <= ub else -ub
+		Dassign[d] = [n.value for n in Dcand[d].nodeat(Dpin[d]).iternext()] if Dcand[d].size > 0 else []
+
+	def recusive(world=world, Dassign=Dassign, Dpin=Dpin, es=es, Dcand=Dcand, aug=aug):
+		nconflict = 0
+		for j, D in enumerate(world.defenders):
+			nremoved = 0
+			for n_i in Dassign[j][::-1]:
+				emax = -np.inf # for augmented PN
+				iremoved = False # byproduct of adding augmented PN
+				for n_d in D.neigh_d: # if other defender can capture the intruder more effectively, remove
+					if n_i in Dassign[n_d]:
+						if es[n_d][n_i] is None:
+							es[n_d][n_i] = efficiency(world.defenders[n_d].state.p_pos, 
+											world.intruders[n_i].state.p_pos, 
+											world.target, world.r, 
+											world.defenders[n_d].max_speed/world.intruders[n_i].max_speed)
+						if es[j][n_i] < es[n_d][n_i]:
+							if not iremoved:
+								Dassign[j].remove(n_i)
+								iremoved = True # byproduct of adding augmented PN
+								nremoved += 1
+							emax = max(emax, es[n_d][n_i]) # for augmented PN
+							# break
+					if str(n_i) in Dhist[n_d]: # for augmented PN
+						if es[j][n_i] < Dhist[n_d][str(n_i)]:
+							if not iremoved:
+								# print(n_i, es[j][n_i], Dhist[n_d])
+								Dassign[j].remove(n_i)
+								iremoved = True
+								nremoved += 1
+							emax = max(emax, Dhist[n_d][str(n_i)])
+				if iremoved: # for augmented PN: record the highest efficiency encountered
+					Dhist[j].update({str(n_i):emax})
+					# print(Dhist[j][str(n_i)], es[j][n_i])
 
 			for k in range(nremoved):
 				if Dcand[j].nodeat(Dpin[j]).prev is not None:
