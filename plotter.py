@@ -13,7 +13,7 @@ ms = 12.
 ms_traj = 12.
 fs = 36.
 traj_size = (10,10)
-plot_size = (12,5)
+plot_size = (13,4)
 
 #####################################################################
 # |							helper funcs							|
@@ -150,6 +150,8 @@ def plot_assign(assign, cap):
 	plt.grid()
 	plt.gca().tick_params(axis='both', which='major', labelsize=fs)
 	plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
+	plt.ylim(0, 25)
+	plt.subplots_adjust(left=.1, bottom=.3, right=.9, top=.9)
 	plt.ylabel(r'$y(m)$', fontsize=fs)
 	plt.xlabel(r'$t(s)$', fontsize=fs)
 	plt.show()
@@ -273,10 +275,11 @@ def velocity_response(ts, cmd_gazebo, states_gazebo):
 					 linestyle='dashed', linewidth=lw)	
 
 	plt.grid()
-	plt.xlabel('t(s)', fontsize=fs)
-	plt.ylabel('velocity(m/s)', fontsize=fs)
+	plt.xlabel(r'$t(s)$', fontsize=fs)
+	plt.ylabel(r'$v_x(m/s)$', fontsize=fs)
 	plt.gca().tick_params(axis='both', which='major', labelsize=fs)
 	plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
-	plt.legend(fontsize=fs)
+	plt.subplots_adjust(left=.2, bottom=.3, right=.9, top=.9)
+	plt.legend(fontsize=fs*0.8)
 	plt.savefig(res_path+'velocity_response_vx.jpg')
 	plt.close()

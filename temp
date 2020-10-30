@@ -4,4 +4,7 @@ The dynamic model used in this simulation is Bizard Crazyflie2.0, and is built b
 
 The major impact brought by the 6DOF dynamic model is that the players cannot follow the velocity command precisely, therefore the player locations deviate from the desired value since the game starts. Such deviation in turn cause the subsequential assignments to be different. In the simple simulation, it is possible to use one single speed ration $v_I/v_D$ to compute the dominant regions, in the Gazebo simulation, however, we need to measure the instataneous speed for each DR computation. 
 
-Another issue to be handled is collision avoidance. Here we choose to use ORCA []. ORCA computes the smallest variation on the desired velocity that avoids collision for a given period time in the future. As the output of our game strategy is exactly a desired velocity, we implement ORCA on top of it to handle the collision avoidance problem. The structure of setup is shown in Figure. 
+Another issue to be handled is collision avoidance. Here we choose to use ORCA []. ORCA computes the smallest variation on the desired velocity that avoids collision for a given period time in the future. As the output of our game strategy is exactly a desired velocity, we implement ORCA on top of it to handle the collision avoidance problem. The structure of setup is shown in Figure.
+
+
+3D7I: 30.125999999999998 23.703999999999983 0.32535383295297954 0.6331761783639422

@@ -47,7 +47,18 @@ def get_metric(res_path):
 
 
 if __name__ == '__main__':
+	tc, tc_, tl, tl_, k = 0, 0, 0, 0, 0
 	for i in next(os.walk(res_dir))[1]:
-		print(i)
-		tmax, tmax_s, tlmin_gazebo, tlmin_simple = get_metric(res_path=res_dir+i+'/')
-		print(tmax, tmax_s, tlmin_gazebo, tlmin_simple)
+		if 'res_00_' in i:
+		# print(i)
+			tmax, tmax_s, tlmin_gazebo, tlmin_simple = get_metric(res_path=res_dir+i+'/')
+			k   += 1
+			tc  += tmax
+			tc_ += tmax_s
+			tl  += tlmin_gazebo
+			tl_ += tlmin_simple
+			print(tmax, tmax_s, tlmin_gazebo, tlmin_simple)
+
+
+	print(tc/k, tc_/k, tl/k, tl_/k)
+			# print(tmax, tmax_s, tlmin_gazebo, tlmin_simple)

@@ -11,7 +11,7 @@ from plotter import plot_assign, compare_traj
 states_gazebo, tmin, tmax  = read_gazebo_state()
 cmd_gazebo, tmin, tmax  = read_gazebo_cmd(tmin=tmin, tmax=tmax)
 cap_gazebo, tmax = read_gazebo_cap(tmax=tmax)
-print(cap_gazebo)
+# print(cap_gazebo)
 params = read_gazebo_param()
 
 # replay the gazebo simulation
