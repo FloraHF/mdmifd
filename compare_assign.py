@@ -24,21 +24,22 @@ import pickle
 
 from Envs.environment import MultiAgentEnv
 import Envs.scenarios as scenarios
-from Envs.scenarios.game_mdmi.astrategy import knapsack_assign, negotiate_assign
+from Envs.scenarios.game_mdmi.astrategy import knapsack_assign, negotiate_assign, augmented_negotiation
 
 
 MAX_EPISODES = 50
 MAX_EP_STEPS = 100
 
-PATH = './Logs/Geometric/assign'
+PATH = './Logs/Geometric/'
 scenario = scenarios.load('game_mdmi').Scenario()
 
 
-def evaluate_assignment(r, nd, ni, vd, vi, log_PATH=PATH, n_ep=MAX_EPISODES):
-	for Rt in [3., 4., 5., 7, 10]:
-		nstep = int((Rt-1)/.25)
-		for Ro in np.linspace(1, 1+.25*nstep, nstep+1):
-			log_path = os.path.join(log_PATH, 'Rd=%d_Ri=%d'%(Rt*100, Ro*100))
+def evaluate_assignment(r, nd, ni, vd, vi, log_PATH=PATH, n_ep=MAX_EPISODES, overlap=.5, tht=[0.1, 1.9]):
+	for Rt in [1, 2, 3, 5., 7, 10]:
+		# nstep = int(5/.5)
+		# for Ro in np.linspace(1, 1+.5*nstep, nstep+1):
+		for Ro in [1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 9]:
+			log_path = os.path.join(log_PATH, 'D%dI%d'%(nd, ni), 'assign', 'Rd=%d_Ri=%d'%(Rt*100, Ro*100))
 			if not os.path.exists(log_path): 
 				os.makedirs(log_path)
 			log_file = log_path + '/eff.csv'
@@ -47,15 +48,18 @@ def evaluate_assignment(r, nd, ni, vd, vi, log_PATH=PATH, n_ep=MAX_EPISODES):
 
 				print(Rt, Ro, i, log_file)
 
-				world = scenario.make_world(r=r, Rt=Rt, Ro=Ro, nd=nd, ni=ni, vd=vd, vi=vi, mode='simple')
+				world = scenario.make_world(r=r, Rt=Rt, Ro=Ro, nd=nd, ni=ni, vd=vd, vi=vi, 
+											mode='simple', overlap=overlap, tht=tht)
 				env = MultiAgentEnv(world, scenario.reset_world, scenario.reward_team,
 									scenario.observation, state_callback=scenario.state,
 									done_callback=scenario.done_callback_defender)
-				env.reset(evend=True)	
+				env.reset(evend=False)	
 				env_ = deepcopy(env)
+				env__ = deepcopy(env)
 
 				_, ek = knapsack_assign(env.world)
 				_, en = negotiate_assign(env_.world)
+				_, ea = augmented_negotiation(env__.world)
 				# print(ek, en)
 				state = list(map(str, env.get_state()))
 
@@ -64,14 +68,15 @@ def evaluate_assignment(r, nd, ni, vd, vi, log_PATH=PATH, n_ep=MAX_EPISODES):
 						f.write(','.join(['D%s:x,D%s:y'%(dd, dd) for dd in range(env.world.nd)] +\
 										 ['I%s:x,I%s:y'%(ii, ii) for ii in range(env.world.ni)] +\
 										 ['I%s:active'%ii for ii in range(env.world.ni)]+ \
-										 ['ek'] + ['en']) + '\n')		
+										 ['ek'] + ['en'] + ['ea']) + '\n')		
 										 				
 				with open(log_file, 'a') as f:
-					f.write(','.join(state + ['%.5f'%ek] + ['%.5f'%en])+'\n')
+					f.write(','.join(state + ['%.5f'%ek] + ['%.5f'%en] + ['%.5f'%ea])+'\n')
 
 
-def plot_assign_statistics(res_path=PATH):
+def plot_assign_statistics(res_path=PATH, nd=3, ni=12):
 
+	res_path = os.path.join(res_path, 'D%dI%d'%(nd, ni), 'assign')
 	colors = ['r', 'b', 'g', 'k', 'c', 'm']
 	
 	Rds, Ris, ns, kwins, nwins, ekave, enave = [], [], [], [], [], [], []
@@ -99,6 +104,8 @@ def plot_assign_statistics(res_path=PATH):
 
 		ek_ = data['ek'].to_list()
 		en_ = data['en'].to_list()
+		# ea_ = data['ea'].to_list()
+
 		ek, en = [], []
 		n, kwin, nwin = 0, 0, 0
 		for ek__, en__ in zip(ek_, en_):
@@ -122,26 +129,26 @@ def plot_assign_statistics(res_path=PATH):
 
 
 	######## the percentage that ties with the optimal solution
-	# plt.figure(figsize=(18, 6))
-	# for i, (Rd, Ri, n, kwin, nwin, ek, en, c) in enumerate(zip(Rds, Ris, ns, kwins, nwins, ekave, enave, colors)):
-	# 		# winning rate	
-	# 		if i > -1:
-	# 			temp = [(r, 1- kwin_/n_) for r, kwin_, n_ in zip(Ri, kwin, n)]
-	# 			temp = sorted(temp, key=lambda x: x[0])
-	# 			print(min([x[1] for x in temp]))
-	# 			plt.plot([d[0] for d in temp], [d[1] for d in temp], 
-	# 					color=c, linestyle='solid', linewidth=2.5,
-	# 					label=r'$R_c=%s$'%str(Rd))
-	# 		values			
-	# fs = 36
-	# plt.grid()
-	# plt.gca().tick_params(axis='both', which='major', labelsize=fs)
-	# plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
-	# plt.legend(ncol=2, fontsize=fs*0.8)
-	# plt.xlabel(r'$R_d(m)$', fontsize=fs)
-	# plt.ylabel(r'$P(e_{PN}=e_{opt})$', fontsize=fs)
-	# plt.subplots_adjust(left=0.1, right=0.95, top=0.9, bottom=0.2)
-	# plt.show()
+	plt.figure(figsize=(18, 6))
+	for i, (Rd, Ri, n, kwin, nwin, ek, en, c) in enumerate(zip(Rds, Ris, ns, kwins, nwins, ekave, enave, colors)):
+			# winning rate	
+			if i > -1:
+				temp = [(r, 1- kwin_/n_) for r, kwin_, n_ in zip(Ri, kwin, n)]
+				temp = sorted(temp, key=lambda x: x[0])
+				print(min([x[1] for x in temp]))
+				plt.plot([d[0] for d in temp], [d[1] for d in temp], 
+						color=c, linestyle='solid', linewidth=2.5,
+						label=r'$R_c=%s$'%str(Rd))
+			# values			
+	fs = 36
+	plt.grid()
+	plt.gca().tick_params(axis='both', which='major', labelsize=fs)
+	plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
+	plt.legend(ncol=2, fontsize=fs*0.8)
+	plt.xlabel(r'$R_d(m)$', fontsize=fs)
+	plt.ylabel(r'$P(e_{PN}=e_{opt})$', fontsize=fs)
+	plt.subplots_adjust(left=0.1, right=0.95, top=0.9, bottom=0.2)
+	plt.show()
 
 	######### the amount that lose to the optimal solution
 	plt.figure(figsize=(18, 6))
@@ -168,5 +175,15 @@ def plot_assign_statistics(res_path=PATH):
 		
 
 if __name__ == '__main__':
-	evaluate_assignment(r=.3, nd=3, ni=12, vd=1., vi=.8)
-	# plot_assign_statistics()
+
+	import argparse
+	parser = argparse.ArgumentParser()
+	parser.add_argument('nd', type=int, help='the number of defenders')
+	parser.add_argument('ni', type=int, help='the number of intruders')
+	parser.add_argument('lb', type=float, help='lower bound of theta, for initial location generation')
+	parser.add_argument('ub', type=float, help='upper bound of theta, for initial location generation')
+
+	args = parser.parse_args()
+
+	# evaluate_assignment(r=.3, nd=args.nd, ni=args.ni, vd=1., vi=.8, tht=[args.lb, args.ub])
+	plot_assign_statistics(nd=args.nd, ni=args.ni)

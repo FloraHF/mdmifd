@@ -28,7 +28,9 @@ class Scenario(BaseScenario):
 					xds=None, xis=None, 
 					resid=1, 
 					iselect_mode='value',
-					mode='gazebo'):
+					mode='gazebo',
+					overlap=0.,
+					tht=[.5, 1.]):
 
 		world = Game()
 		world.mode = mode
@@ -38,6 +40,11 @@ class Scenario(BaseScenario):
 		world.vd = vd
 		world.vi = vi
 		world.nl = 1 
+
+		# initial location generation
+		world.overlap = overlap
+		world.tht_lb = tht[0]
+		world.tht_ub = tht[1]
 
 		# add agents
 		world.agents = [Agent(d) for d in range(world.nd)] + [Agent(i) for i in range(world.ni)]
@@ -103,10 +110,10 @@ class Scenario(BaseScenario):
 						k = i if evend else None
 						# agent.state.p_pos = np.random.uniform(low=0, high=5, size=(2,))
 						if i == 0:
-							agent.state.p_pos, r = self.generate_player_pos(world, 1., 2, k=k)
+							agent.state.p_pos, r = self.generate_player_pos(world, 1., 2+world.overlap, k=k)
 						else:
-							if evend: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2, r=r, k=k)
-							else: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2, k=k)
+							if evend: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2+world.overlap, r=r, k=k)
+							else: agent.state.p_pos, r = self.generate_player_pos(world, 1., 2+world.overlap, k=k)
 
 						for other in world.agents[:i]: # agents 0-i are all defenders
 							# print('generating world', other.size)
@@ -164,9 +171,9 @@ class Scenario(BaseScenario):
 		# world.target.state.p_pos
 		if r is None: r = np.random.uniform(lb*world.target.size, ub*world.target.size)
 		if k is None: 
-			tht = np.random.uniform(.5*pi, 1.*pi)
+			tht = np.random.uniform(world.tht_lb*pi, world.tht_ub*pi)
 		else:
-			tht = .5*pi + k*.5*pi/(world.nd-1)
+			tht = world.tht_lb*pi + k*(world.tht_ub - world.tht_lb)*pi/(world.nd-1)
 
 		return world.target.state.p_pos + np.array([r*cos(tht), r*sin(tht)]), r
 
@@ -263,7 +270,8 @@ class Scenario(BaseScenario):
 		if not agent.state.o:
 			dx = agent.mem.init_p_pos - agent.state.p_pos
 			dis = norm(dx)
-			u = 0.3*agent.u_range*dx/dis - agent.state.p_vel if dis > 0 else np.array([0., 0.])
+			# u = 0.3*agent.u_range*dx/dis - agent.state.p_vel if dis > 0 else np.array([0., 0.])
+			u = 0.5*agent.u_range*dx/dis if dis > 0 else np.array([0., 0.])
 			
 			return u
 

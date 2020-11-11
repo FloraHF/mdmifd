@@ -1,3 +1,3 @@
-a = {'a':1, 'b':2}
+a = {'D1':1, 'D21':12}
 
-print(len(a))
+print('D21' in a)

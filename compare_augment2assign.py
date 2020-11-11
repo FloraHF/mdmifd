@@ -28,9 +28,9 @@ from Envs.scenarios.game_mdmi.astrategy import negotiate_assign, augmented_negot
 
 
 MAX_EPISODES = 5
-MAX_EP_STEPS = 100
+MAX_EP_STEPS = 10
 
-PATH = './Logs/Geometric/augment2assign'
+PATH = './Logs/Geometric'
 scenario = scenarios.load('game_mdmi').Scenario()
 
 
@@ -38,7 +38,7 @@ def evaluate_assignment(r, nd, ni, vd, vi, log_PATH=PATH, n_ep=MAX_EPISODES):
 	for Rt in [1., 3., 5.]:
 		nstep = int((Rt-1)/.25)
 		for Ro in np.linspace(1., 1+.25*nstep, nstep+1):
-			log_path = os.path.join(log_PATH, 'Rd=%d_Ri=%d'%(Rt*100, Ro*100))
+			log_path = os.path.join(log_PATH, 'D%dI%d'%(nd, ni), 'augment2assign', 'Rd=%d_Ri=%d'%(Rt*100, Ro*100))
 			if not os.path.exists(log_path): 
 				os.makedirs(log_path)
 			log_file = log_path + '/eff.csv'
@@ -72,8 +72,10 @@ def evaluate_assignment(r, nd, ni, vd, vi, log_PATH=PATH, n_ep=MAX_EPISODES):
 					f.write(','.join(state + ['%.5f'%ea] + ['%.5f'%en])+'\n')
 
 
-def plot_assign_statistics(res_path=PATH):
-
+def plot_assign_statistics(res_path=PATH, nd=3, ni=12):
+	
+	res_path = os.path.join(res_path, 'D%dI%d'%(nd, ni), 'augment2assign')
+	# print(res_path)
 	colors = ['r', 'b', 'g', 'k', 'c', 'm']
 	
 	Rds, Ris, ns, kwins, nwins, eaave, enave = [], [], [], [], [], [], []
@@ -94,6 +96,7 @@ def plot_assign_statistics(res_path=PATH):
 			# print(Rd)
 			# k += 1
 
+		print(res_path + '/' + i + '/eff.csv')
 		data = pd.read_csv(res_path + '/' + i + '/eff.csv')
 
 		Ris[Rds.index(Rd)].append(Ri)
@@ -167,5 +170,5 @@ def plot_assign_statistics(res_path=PATH):
 		
 
 if __name__ == '__main__':
-	evaluate_assignment(r=.1, nd=30, ni=100, vd=1., vi=.8)
-	plot_assign_statistics()
+	evaluate_assignment(r=.1, nd=3, ni=14, vd=1., vi=.8)
+	# plot_assign_statistics(nd=3, ni=12)

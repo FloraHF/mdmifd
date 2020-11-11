@@ -8,3 +8,10 @@ Another issue to be handled is collision avoidance. Here we choose to use ORCA [
 
 
 3D7I: 30.125999999999998 23.703999999999983 0.32535383295297954 0.6331761783639422
+
+
+
+Future work:
+
+There are many aspect can be done to improve the.
+For example, the intruders in our simulations are almost evenly distributed. When they are not, some defenders will assigned to more intruders than others. 

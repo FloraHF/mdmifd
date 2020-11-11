@@ -27,19 +27,19 @@ import Envs.scenarios as scenarios
 from Envs.scenarios.game_mdmi.astrategy import knapsack_assign, negotiate_assign
 
 
-MAX_EPISODES = 50
+MAX_EPISODES = 10
 MAX_EP_STEPS = 100
 
-PATH = './Logs/Geometric/game'
+PATH = './Logs/Geometric'
 scenario = scenarios.load('game_mdmi').Scenario()
 
-def evaluate_game(r, nd, ni, vd, vi, log_PATH=PATH, render_every=1e5, n_ep=MAX_EPISODES):
+def evaluate_game(r, nd, ni, vd, vi, log_PATH=PATH, render_every=1e5, n_ep=MAX_EPISODES, overlap=.0, tht=[0.1, 1.9]):
 
-	for Rt in [2,  3., 4., 5.]:
-		nstep = int((Rt-1)/.25)
-		for Ro in np.linspace(1, 1+.25*nstep, nstep+1):
+	for Rt in [1., 2,  3., 4., 5.]:
+		nstep = int(5/.5)
+		for Ro in np.linspace(1, 1+.5*nstep, nstep+1):
 
-			log_path = os.path.join(log_PATH, 'Rd=%d_Ri=%d'%(Rt*100, Ro*100))
+			log_path = os.path.join(log_PATH, 'D%dI%d'%(nd, ni), 'game', 'Rd=%d_Ri=%d'%(Rt*100, Ro*100))
 			if not os.path.exists(log_path): os.makedirs(log_path)
 			existings = [int(i) for i in next(os.walk(log_path))[1]]
 			i0 = -1 if not existings else max(existings) # the last existing sample
@@ -58,7 +58,8 @@ def evaluate_game(r, nd, ni, vd, vi, log_PATH=PATH, render_every=1e5, n_ep=MAX_E
 				print('>>>>>>>>>>>> simulating episode %s (Rt=%.2f, Ro=%.2f) >>>>>>>>>>>'%(i, Rt, Ro))
 
 				# ---------------- prepare two environments and directories -------------#
-				world = scenario.make_world(r=r, Rt=Rt, Ro=Ro, nd=nd, ni=ni, vd=vd, vi=vi, mode='simple')
+				world = scenario.make_world(r=r, Rt=Rt, Ro=Ro, nd=nd, ni=ni, vd=vd, vi=vi, 
+											mode='simple', overlap=overlap, tht=tht)
 				env = MultiAgentEnv(world, scenario.reset_world, scenario.reward_team,
 									scenario.observation, state_callback=scenario.state,
 									done_callback=scenario.done_callback_defender)
@@ -171,9 +172,9 @@ def evaluate_game(r, nd, ni, vd, vi, log_PATH=PATH, render_every=1e5, n_ep=MAX_E
 													e_ave,
 													e_ave_])))+'\n')
 
-def plot_traj(Rd, Ri, i, cases, res_path=PATH):
+def plot_traj(Rd, Ri, i, cases, res_path=PATH, nd=3, ni=12):
 
-	res_path = os.path.join(res_path, 'Rd=%d_Ri=%d'%(Rd*100, Ri*100), str(i))
+	res_path = os.path.join(res_path, 'D%dI%d'%(nd, ni), 'game', 'Rd=%d_Ri=%d'%(Rd*100, Ri*100), str(i))
 	with open(res_path+'/config.pickle', 'rb') as f:
 		env = pickle.load(f)
 
@@ -245,7 +246,9 @@ def plot_traj(Rd, Ri, i, cases, res_path=PATH):
 	plt.ylabel(r'$y_D(m)$', fontsize=fs)
 	plt.show()
 
-def plot_game_statistics(res_path=PATH):
+def plot_game_statistics(res_path=PATH, nd=3, ni=12):
+
+	res_path = os.path.join(res_path, 'D%dI%d'%(nd, ni), 'game')
 
 	Rds, Ris, tcs_n, tcs_k, tls_n, tls_k, rcs_n, rcs_k, es_n, es_k = [], [], [], [], [], [], [], [], [], []
 	colors = ['r', 'b', 'g', 'k', 'c', 'm']
@@ -310,12 +313,12 @@ def plot_game_statistics(res_path=PATH):
 			# plt.plot(Ri, tc_k, color=c, marker='o', markevery=1, linestyle='dashed', label='Rd='+str(Rd)+',knapsack')
 			# plt.plot(Ri, tl_n, color=c, linestyle='solid', label='Rd='+str(Rd)+',negotiate')
 			# plt.plot(Ri, tl_k, color=c, linestyle='dashed', label='Rd='+str(Rd)+',knapsack')
-			temp = [(r, rc_n_) for r, rc_n_ in zip(Ri, tc_n)]
+			temp = [(r, rc_n_) for r, rc_n_ in zip(Ri, rc_n)]
 			temp = sorted(temp, key=lambda x: x[0])
 			plt.plot([d[0] for d in temp], [d[1] for d in temp], 
 						color=c, linestyle='solid', linewidth=2, 
 						label=r'$R_c=$'+str(Rd)+',PN')
-			temp = [(r, rc_k_) for r, rc_k_ in zip(Ri, tc_k)]
+			temp = [(r, rc_k_) for r, rc_k_ in zip(Ri, rc_k)]
 			temp = sorted(temp, key=lambda x: x[0])
 			plt.plot([d[0] for d in temp], [d[1] for d in temp], 
 						color=c, linestyle='dashed', linewidth=2, 
@@ -335,8 +338,9 @@ def plot_game_statistics(res_path=PATH):
 	plt.show()
 
 
-def plot_correlate(res_path=PATH):
+def plot_correlate(res_path=PATH, nd=3, ni=12):
 
+	res_path = os.path.join(res_path, 'D%dI%d'%(nd, ni), 'game')
 	Rds, Ris, tcs_n, tcs_k, tls_n, tls_k, rcs_n, rcs_k, es_n, es_k = [], [], [], [], [], [], [], [], [], []
 	colors = ['r', 'b', 'g', 'k', 'c', 'm']
 
@@ -408,7 +412,17 @@ def plot_correlate(res_path=PATH):
 	# plt.show()
 
 if __name__ == '__main__':
-	evaluate_game(r=.3, nd=3, ni=12, vd=1., vi=.8, render_every=1e10)
-	# plot_traj(5, 4, 218, ['negotiate', 'knapsack'])	
-	# plot_game_statistics()
-	# plot_correlate()
+
+	import argparse
+	parser = argparse.ArgumentParser()
+	parser.add_argument('nd', type=int, help='the number of defenders')
+	parser.add_argument('ni', type=int, help='the number of intruders')
+	parser.add_argument('lb', type=float, help='lower bound of theta, for initial location generation')
+	parser.add_argument('ub', type=float, help='upper bound of theta, for initial location generation')
+
+	args = parser.parse_args()
+
+	evaluate_game(r=.3, nd=args.nd, ni=args.ni, vd=1., vi=.8, render_every=1e10, tht=[args.lb, args.ub])
+	plot_traj(4, 2, 4, ['negotiate', 'knapsack'], nd=args.nd, ni=args.ni)	
+	plot_game_statistics(nd=args.nd, ni=args.ni)
+	plot_correlate(nd=args.nd, ni=args.ni)

@@ -98,6 +98,35 @@ class IAssignment(object):
 		self.assd = set()
 		self.n = 0
 
+def group_defenders(world, dset):
+	# print('================ grouping defenders ===========')
+	Rd = world.defenders[0].Rd
+	groups = []
+	for d in dset:
+		# print('----------- for %d---------'%d)
+		found = False
+		for i, g in enumerate(groups):
+			# print('>>>>> checking', g, 'from', groups)
+			for din in g:
+				d_din = dist(world.defenders[d].state.p_pos, 
+						world.defenders[din].state.p_pos)
+				# print('>> checking', din, 'from', g, 'distance: ', d_din, 'Rd', Rd)
+				if d_din < Rd:
+					found = True
+					break;
+			if found:
+				# print('found 2!!!!!!!!')
+				break;
+		if found: # if d is connected to existing groups, add d to the group
+			groups[i] = g.union({d})
+			# print('add %d to the currend group'%d, groups)
+		else: # otherwise create a new group for d
+			groups.append({d})
+			# print('add another group', groups)
+
+	# print(groups, dset)
+	return groups
+
 
 def knapsack_assign(world, firstassign=False, sparse=False):
 	# new assignment only when some intruder is captured
@@ -131,16 +160,6 @@ def knapsack_assign(world, firstassign=False, sparse=False):
 	## intruders that can only be captured by one of the defenders		
 	i_to_assign = []		
 	i_to_assign = [i for i in range(world.ni)]
-	# for i, assign in enumerate(Iassign):
-	# 	if world.intruders[i].state.a:
-	# 		if len(assign.ccap) == 1:
-	# 			did = np.squeeze(list(assign.ccap))
-	# 			if eff[i][did]:
-	# 				Dassign[did].add_excl(assign.id, eff[i][did])
-	# 				Dassign[did].add_assd(assign.id, eff[i][did])
-	# 				assign.add_assd(did)
-	# 		elif len(assign.ccap) > 1:
-	# 			i_to_assign.append(i)
 
 	## assign intruders among defenders that can capture them
 	x = [[None for d in world.defenders] for i in world.intruders]
@@ -149,14 +168,19 @@ def knapsack_assign(world, firstassign=False, sparse=False):
 	obj_expr = []
 	capaci_cons_expr = [[] for _ in world.defenders]
 	for i in i_to_assign:
-		permit_cons_expr = []
-		for j in list(Iassign[i].ccap):
-			if Dassign[j].ub > Dassign[j].n:
-				x[i][j] = solver.IntVar(0, 1, 'x[%i,%i]'%(i, j))
-				permit_cons_expr.append(x[i][j])
-				capaci_cons_expr[j].append(x[i][j])
-				obj_expr.append(x[i][j]*eff[i][j])
-		solver.Add(solver.Sum(permit_cons_expr) <= 1)
+		groups = group_defenders(world, Iassign[i].ccap)
+		# print(i, Iassign[i].ccap, groups)
+		for g in groups:
+			permit_cons_expr = [] # the intruder can only be assigned to 
+								  # one defender in a connected group			
+			for j in list(g):
+			# for j in list(Iassign[i].ccap):
+				if Dassign[j].ub > Dassign[j].n:
+					x[i][j] = solver.IntVar(0, 1, 'x[%i,%i]'%(i, j))
+					permit_cons_expr.append(x[i][j])
+					capaci_cons_expr[j].append(x[i][j])
+					obj_expr.append(x[i][j]*eff[i][j])
+			solver.Add(solver.Sum(permit_cons_expr) <= 1)
 
 	# capacity constraint
 	for j, ccons in enumerate(capaci_cons_expr):
@@ -296,7 +320,7 @@ def augmented_negotiation(world, firstassign=False, sparse=False, aug=False):
 		Dpin[d] = 0 if Dcand[d].size <= ub else -ub
 		Dassign[d] = [n.value for n in Dcand[d].nodeat(Dpin[d]).iternext()] if Dcand[d].size > 0 else []
 
-	def recusive(world=world, Dassign=Dassign, Dpin=Dpin, es=es, Dcand=Dcand, aug=aug):
+	def recusive(world=world, Dassign=Dassign, Dpin=Dpin, es=es, Dcand=Dcand, Dhist=Dhist):
 		nconflict = 0
 		for j, D in enumerate(world.defenders):
 			nremoved = 0
