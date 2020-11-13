@@ -24,7 +24,7 @@ import pickle
 
 from Envs.environment import MultiAgentEnv
 import Envs.scenarios as scenarios
-from Envs.scenarios.game_mdmi.astrategy import knapsack_assign, negotiate_assign
+from Envs.scenarios.game_mdmi.astrategy import knapsack_assign, negotiate_assign, augmented_negotiation
 
 
 MAX_EPISODES = 10
@@ -36,9 +36,9 @@ scenario = scenarios.load('game_mdmi').Scenario()
 def evaluate_game(r, nd, ni, vd, vi, log_PATH=PATH, render_every=1e5, n_ep=MAX_EPISODES, overlap=.0, tht=[0.1, 1.9]):
 
 	for Rt in [1., 2,  3., 4., 5.]:
-		nstep = int(5/.5)
-		for Ro in np.linspace(1, 1+.5*nstep, nstep+1):
-
+		# nstep = int(5/.5)
+		# for Ro in np.linspace(1, 1+.5*nstep, nstep+1):
+		for Ro in [rr for rr in [1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 9] if rr < Rt+6 ]:
 			log_path = os.path.join(log_PATH, 'D%dI%d'%(nd, ni), 'game', 'Rd=%d_Ri=%d'%(Rt*100, Ro*100))
 			if not os.path.exists(log_path): os.makedirs(log_path)
 			existings = [int(i) for i in next(os.walk(log_path))[1]]
@@ -130,7 +130,9 @@ def evaluate_game(r, nd, ni, vd, vi, log_PATH=PATH, render_every=1e5, n_ep=MAX_E
 						if j == 0: height, width, layers = imgdata[0].shape
 						imgArray.append(cv2.cvtColor(imgdata[0], cv2.COLOR_BGR2RGB))
 
-					_, e = negotiate_assign(env_.world, firstassign=(j == 0))
+					# _, e = negotiate_assign(env_.world, firstassign=(j == 0))
+					_, e = augmented_negotiation(env_.world, firstassign=(j == 0))
+					
 					et_ += e
 					actions = [scenario.dstrategy(d, env_.world) for d in env_.world.defenders]
 					obs_n, reward_n, done_n, info_n = env_.step(actions)
@@ -422,7 +424,7 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	evaluate_game(r=.3, nd=args.nd, ni=args.ni, vd=1., vi=.8, render_every=1e10, tht=[args.lb, args.ub])
-	plot_traj(4, 2, 4, ['negotiate', 'knapsack'], nd=args.nd, ni=args.ni)	
+	# evaluate_game(r=.3, nd=args.nd, ni=args.ni, vd=1., vi=.8, render_every=1e10, tht=[args.lb, args.ub])
+	# plot_traj(4, 2, 4, ['negotiate', 'knapsack'], nd=args.nd, ni=args.ni)	
 	plot_game_statistics(nd=args.nd, ni=args.ni)
 	plot_correlate(nd=args.nd, ni=args.ni)

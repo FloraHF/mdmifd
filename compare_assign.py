@@ -27,7 +27,7 @@ import Envs.scenarios as scenarios
 from Envs.scenarios.game_mdmi.astrategy import knapsack_assign, negotiate_assign, augmented_negotiation
 
 
-MAX_EPISODES = 50
+MAX_EPISODES = 100
 MAX_EP_STEPS = 100
 
 PATH = './Logs/Geometric/'
@@ -36,9 +36,11 @@ scenario = scenarios.load('game_mdmi').Scenario()
 
 def evaluate_assignment(r, nd, ni, vd, vi, log_PATH=PATH, n_ep=MAX_EPISODES, overlap=.5, tht=[0.1, 1.9]):
 	for Rt in [1, 2, 3, 5., 7, 10]:
+	# for Rt in [3]:
 		# nstep = int(5/.5)
 		# for Ro in np.linspace(1, 1+.5*nstep, nstep+1):
-		for Ro in [1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 9]:
+		# for Ro in [2.5]:
+		for Ro in [rr for rr in [1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 9] if rr<Rt+6. ]:
 			log_path = os.path.join(log_PATH, 'D%dI%d'%(nd, ni), 'assign', 'Rd=%d_Ri=%d'%(Rt*100, Ro*100))
 			if not os.path.exists(log_path): 
 				os.makedirs(log_path)
@@ -103,7 +105,7 @@ def plot_assign_statistics(res_path=PATH, nd=3, ni=12):
 		# print(Rd, Ris[k])
 
 		ek_ = data['ek'].to_list()
-		en_ = data['en'].to_list()
+		en_ = data['ea'].to_list()
 		# ea_ = data['ea'].to_list()
 
 		ek, en = [], []
@@ -185,5 +187,5 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	# evaluate_assignment(r=.3, nd=args.nd, ni=args.ni, vd=1., vi=.8, tht=[args.lb, args.ub])
+	evaluate_assignment(r=.3, nd=args.nd, ni=args.ni, vd=1., vi=.8, tht=[args.lb, args.ub])
 	plot_assign_statistics(nd=args.nd, ni=args.ni)

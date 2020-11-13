@@ -198,15 +198,18 @@ def knapsack_assign(world, firstassign=False, sparse=False):
 					Iassign[i].add_assd(d)
 	et = 0.
 	nassd = 0
+	# print('------------knapsack_assign-------------')
 	for d, (defender, Dass) in enumerate(zip(world.defenders, Dassign)):
+		
 		defender.state.o = [int(i) for i in Dass.assd]
 		defender.state.f = [e for i, e in Dass.assd.items()]
 		defender.state.s = 'opt'
 		# print(defender.neigh_i, [ee[d] for ee in eff])
+		# print(d, defender.state.o)
 		for i in Dass.assd:
 			et += eff[int(i)][d]
 			nassd += 1
-	
+	# print(et)
 	return nassd, et
 
 def negotiate_assign(world, firstassign=False, sparse=False, aug=False):
@@ -272,7 +275,9 @@ def negotiate_assign(world, firstassign=False, sparse=False, aug=False):
 
 	et = 0.
 	nassd = 0
+	# print('-----------negotiate_assign--------------')
 	for d, (defender, assign) in enumerate(zip(world.defenders, Dassign)):
+		# print(d, assign)
 		defender.state.o = assign
 		defender.state.f = [es[d][i] for i in assign]
 		defender.state.s = 'pwn'
@@ -282,6 +287,7 @@ def negotiate_assign(world, firstassign=False, sparse=False, aug=False):
 		for i in assign:
 			et += es[d][i]
 			nassd += 1
+	# print(et)			
 	# print('---------------------------------------------------')
 
 	return nassd, et
@@ -302,8 +308,10 @@ def augmented_negotiation(world, firstassign=False, sparse=False, aug=False):
 	# declare
 	ub = min(3, int(np.ceil(world.ni/world.nd)))
 	Dcand = [[] for d in range(world.nd)]
+	# Ncand = [None for d in range(world.nd)]
 	Dpin = [None for d in range(world.nd)]
-	Dassign = [[] for _ in range(world.nd)]
+	# Dpin_ = [-1 for d in range(world.nd)]
+	Dassign = [None for _ in range(world.nd)]
 	Dhist = [dict() for _ in range(world.nd)] # for augmented PN
 	es = [[None for _ in range(world.ni)] for _ in range(world.nd)]
 
@@ -316,58 +324,136 @@ def augmented_negotiation(world, firstassign=False, sparse=False, aug=False):
 			es[d][i] = e
 			temp.append((i, e))
 
-		Dcand[d] = dllist([i for i, e in sorted(temp, key=lambda x: x[1])])
-		Dpin[d] = 0 if Dcand[d].size <= ub else -ub
-		Dassign[d] = [n.value for n in Dcand[d].nodeat(Dpin[d]).iternext()] if Dcand[d].size > 0 else []
+		# candidate list
+		Dcand[d] = [i for i, e in sorted(temp, key=lambda x: x[1])]
 
-	def recusive(world=world, Dassign=Dassign, Dpin=Dpin, es=es, Dcand=Dcand, Dhist=Dhist):
+		# Dpin: locations of preferred intruder in the candidate list
+		n = len(Dcand[d])
+		if n <= ub:
+			Dpin[d] = [ipin for ipin in range(-n, 0)]
+		else:
+			Dpin[d] = [ipin for ipin in range(-ub, 0)]
+
+		# confilict history
+		Dhist[d] = {str(Dcand[d][ipin]): es[d][Dcand[d][ipin]] for ipin in Dpin[d]}
+		# Dpin[d] = -Dcand[d].size if Dcand[d].size <= ub else -ub
+		# Ncand[d] = n
+		# Dhist[d] = {str(Dcand[d][ipin]):es[d][Dcand[d][ipin]] for ipin in range(Dpin[d], Dpin_[d]+1)}
+		# print(Dhist[d], Dcand[d])
+		# assn = [n.value for n in Dcand[d].nodeat(Dpin[d]).iternext()] if Dcand[d].size > 0 else []
+		
+		# Dassign[d] = dllist(assn)
+
+	# record the length of the candidate list
+	Ncand = [len(dcand) for dcand in Dcand]
+
+	# def recusive(world=world, Dassign=Dassign, Dpin=Dpin, Dpin_=Dpin_, es=es, Dcand=Dcand, Dhist=Dhist):
+	# 	nconflict = 0
+	# 	for j, D in enumerate(world.defenders):
+	# 		nremoved = 0
+	# 		# negotiate about the preferred intruder list
+	# 		for n_i in Dassign[j][::-1]:
+	# 			emax = -np.inf # for augmented PN
+	# 			iremoved = False # byproduct of adding augmented PN
+	# 			for n_d in D.neigh_d: # if other defender can capture the intruder more effectively, remove
+	# 				if n_i in Dassign[n_d]:
+	# 					if es[n_d][n_i] is None:
+	# 						es[n_d][n_i] = efficiency(world.defenders[n_d].state.p_pos, 
+	# 										world.intruders[n_i].state.p_pos, 
+	# 										world.target, world.r, 
+	# 										world.defenders[n_d].max_speed/world.intruders[n_i].max_speed)
+	# 					if es[j][n_i] < es[n_d][n_i]:
+	# 						if not iremoved:
+	# 							Dassign[j].remove(n_i)
+	# 							iremoved = True # by product of adding augmented PN
+	# 							nremoved += 1
+	# 							Dpin_[j] -= 1
+	# 						emax = max(emax, es[n_d][n_i]) # for augmented PN
+	# 				if str(n_i) in Dhist[n_d]: # for augmented PN
+	# 					if es[j][n_i] < Dhist[n_d][str(n_i)]:
+	# 						if not iremoved:
+	# 							Dassign[j].remove(n_i)
+	# 							iremoved = True
+	# 							nremoved += 1
+	# 							Dpin_[j] -= 1
+	# 						emax = max(emax, Dhist[n_d][str(n_i)])
+	# 			if iremoved: # for augmented PN: record the highest efficiency encountered
+	# 				Dhist[j].update({str(n_i):emax})
+	# 		for k in range(nremoved):
+	# 			if Dcand[j].nodeat(Dpin[j]).prev is not None:
+	# 				Dassign[j] = [Dcand[j].nodeat(Dpin[j]).prev.value] + Dassign[j]
+	# 				Dpin[j] -= 1
+	# 		nconflict += nremoved
+
+	# 		# continue to update the conflict history
+	# 		n_i_ = Dpin_[j] + 1
+	# 		while n_i_ < 0:
+	# 			emax_ = Dhist[j][str(n_i_)] # current max: from own history
+	# 			for n_d_ in D.neigh_d:
+	# 				if str(n_i_) in Dhist[n_d_]: # for augmented PN
+	# 					if es[j][n_i_] < Dhist[n_d_][str(n_i_)]:
+	# 						emax_ = max(emax_, Dhist[n_d_][str(n_i_)])
+	# 			Dhist[j].update({str(n_i_): emax_})
+	# 			n_i_ += 1
+
+	# 	return nconflict > 0
+
+	def recusive(world=world, Dpin=Dpin, es=es, Dcand=Dcand, Dhist=Dhist):
 		nconflict = 0
 		for j, D in enumerate(world.defenders):
+			# print('-----------------%d-----------------'%j, [Ncand[j][ii] for ii in Dpin[j]], Dcand[j], Dhist[j])
+			# print('D%d: '%j, [Dcand[j][ii] for ii in Dpin[j]], Dcand[j], Dhist[j])
 			nremoved = 0
-			for n_i in Dassign[j][::-1]:
-				emax = -np.inf # for augmented PN
-				iremoved = False # byproduct of adding augmented PN
-				for n_d in D.neigh_d: # if other defender can capture the intruder more effectively, remove
-					if n_i in Dassign[n_d]:
-						if es[n_d][n_i] is None:
-							es[n_d][n_i] = efficiency(world.defenders[n_d].state.p_pos, 
-											world.intruders[n_i].state.p_pos, 
-											world.target, world.r, 
-											world.defenders[n_d].max_speed/world.intruders[n_i].max_speed)
-						if es[j][n_i] < es[n_d][n_i]:
-							if not iremoved:
-								Dassign[j].remove(n_i)
-								iremoved = True # byproduct of adding augmented PN
-								nremoved += 1
-							emax = max(emax, es[n_d][n_i]) # for augmented PN
-							# break
-					if str(n_i) in Dhist[n_d]: # for augmented PN
-						if es[j][n_i] < Dhist[n_d][str(n_i)]:
-							if not iremoved:
-								# print(n_i, es[j][n_i], Dhist[n_d])
-								Dassign[j].remove(n_i)
-								iremoved = True
-								nremoved += 1
-							emax = max(emax, Dhist[n_d][str(n_i)])
-				if iremoved: # for augmented PN: record the highest efficiency encountered
-					Dhist[j].update({str(n_i):emax})
-					# print(Dhist[j][str(n_i)], es[j][n_i])
-
-			for k in range(nremoved):
-				if Dcand[j].nodeat(Dpin[j]).prev is not None:
-					Dassign[j] = [Dcand[j].nodeat(Dpin[j]).prev.value] + Dassign[j]
-					Dpin[j] -= 1
+			if Ncand[j]>0:
+				ipin = -1
+				ipin_min = Dpin[j][0] if Dpin[j] else -Ncand[j]
+				while ipin >= ipin_min: # intruders (currently or used to be) in preferred list
+					i = Dcand[j][ipin]
+					found = False
+					emax = Dhist[j][str(i)]
+					nd_max = j
+					for n_d in D.neigh_d:
+						if str(i) in Dhist[n_d] and es[j][i] < Dhist[n_d][str(i)]:
+							# emax = max(emax, Dhist[n_d][str(i)])
+							if Dhist[n_d][str(i)] > emax:
+								emax = Dhist[n_d][str(i)]
+								nd_max = n_d
+							found = True
+							# print('-.-.-.-.-.-.-.found', n_d, 'has higher e for', i,  Dhist[n_d])
+					if found:
+						Dhist[j].update({str(i): emax}) # update conflict history
+						if ipin in Dpin[j]:  # delete the intruder if its in the preferred list
+							Dpin[j].pop(Dpin[j].index(ipin))
+							nremoved += 1
+						# print('------------- found e_%d_%d>e_%d_%d, remove %d'%(nd_max, i, j, i, i))
+					ipin -= 1
+			# add other intruders to the preferred list if exist
+				for k in range(nremoved):
+					if ipin_min <= -Ncand[j]:
+						break
+					ipin_min -= 1
+					Dpin[j] = [ipin_min] + Dpin[j]
+					newi = Dcand[j][ipin_min]
+					Dhist[j].update({str(newi): es[j][newi]})
 
 			nconflict += nremoved
+
 		return nconflict > 0
 
 	conflict = True
+	# print('>>>>>>>>>start>>>>>>>>>>>>>>>>')
 	while conflict:
-		conflict = recusive()	
+		# print('===================')
+		conflict = recusive()
+
+	for d, (dpin, dcand) in enumerate(zip(Dpin, Dcand)):
+		Dassign[d] = [dcand[ipin] for ipin in dpin]
 
 	et = 0.
 	nassd = 0
+	# print('------------augmented_negotiation-------------')
 	for d, (defender, assign) in enumerate(zip(world.defenders, Dassign)):
+		# print(d, assign)
 		defender.state.o = assign
 		defender.state.f = [es[d][i] for i in assign]
 		defender.state.s = 'pwn'
@@ -377,6 +463,7 @@ def augmented_negotiation(world, firstassign=False, sparse=False, aug=False):
 		for i in assign:
 			et += es[d][i]
 			nassd += 1
+	# print(et)
 	# print('---------------------------------------------------')
 
 	return nassd, et
