@@ -27,7 +27,7 @@ import Envs.scenarios as scenarios
 from Envs.scenarios.game_mdmi.astrategy import knapsack_assign, negotiate_assign, augmented_negotiation
 
 
-MAX_EPISODES = 20
+MAX_EPISODES = 25
 MAX_EP_STEPS = 100
 
 PATH = './Logs/Geometric'
@@ -434,7 +434,7 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	# evaluate_game(r=.3, nd=args.nd, ni=args.ni, vd=1., vi=.8, render_every=1e10, tht=[args.lb, args.ub])
+	evaluate_game(r=.3, nd=args.nd, ni=args.ni, vd=1., vi=.8, render_every=1e10, tht=[args.lb, args.ub])
 	plot_traj(4, 2, 10, ['negotiate', 'knapsack'], nd=args.nd, ni=args.ni)	
 	# plot_game_statistics(nd=args.nd, ni=args.ni)
 	# plot_correlate(nd=args.nd, ni=args.ni)
