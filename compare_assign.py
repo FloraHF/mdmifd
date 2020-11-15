@@ -27,7 +27,7 @@ import Envs.scenarios as scenarios
 from Envs.scenarios.game_mdmi.astrategy import knapsack_assign, negotiate_assign, augmented_negotiation
 
 
-MAX_EPISODES = 100
+MAX_EPISODES = 200
 MAX_EP_STEPS = 100
 
 PATH = './Logs/Geometric/'
@@ -40,7 +40,7 @@ def evaluate_assignment(r, nd, ni, vd, vi, log_PATH=PATH, n_ep=MAX_EPISODES, ove
 		# nstep = int(5/.5)
 		# for Ro in np.linspace(1, 1+.5*nstep, nstep+1):
 		# for Ro in [2.5]:
-		for Ro in [rr for rr in [1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 9] if rr<Rt+6. ]:
+		for Ro in [rr for rr in [1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 9] if rr<Rt+7. ]:
 			log_path = os.path.join(log_PATH, 'D%dI%d'%(nd, ni), 'assign', 'Rd=%d_Ri=%d'%(Rt*100, Ro*100))
 			if not os.path.exists(log_path): 
 				os.makedirs(log_path)
@@ -79,7 +79,7 @@ def evaluate_assignment(r, nd, ni, vd, vi, log_PATH=PATH, n_ep=MAX_EPISODES, ove
 def plot_assign_statistics(res_path=PATH, nd=3, ni=12):
 
 	res_path = os.path.join(res_path, 'D%dI%d'%(nd, ni), 'assign')
-	colors = ['r', 'b', 'g', 'k', 'c', 'm']
+	colors = ['c', 'b', 'g', 'k', 'r', 'm']
 	
 	Rds, Ris, ns, kwins, nwins, ekave, enave = [], [], [], [], [], [], []
 	# k = 0
@@ -104,7 +104,7 @@ def plot_assign_statistics(res_path=PATH, nd=3, ni=12):
 		Ris[Rds.index(Rd)].append(Ri)
 		# print(Rd, Ris[k])
 
-		ek_ = data['ek'].to_list()
+		ek_ = data['en'].to_list()
 		en_ = data['ea'].to_list()
 		# ea_ = data['ea'].to_list()
 
@@ -129,26 +129,38 @@ def plot_assign_statistics(res_path=PATH, nd=3, ni=12):
 		ekave[Rds.index(Rd)].append(sum(ek_)/n)
 		enave[Rds.index(Rd)].append(sum(en_)/n)
 
+	# print(Rds, kwins)
+
+	ns = [x for _, x in sorted(zip(Rds, ns))]
+	Ris = [x for _, x in sorted(zip(Rds, Ris))]
+	kwins = [x for _, x in sorted(zip(Rds, kwins))]
+	nwins = [x for _, x in sorted(zip(Rds, nwins))]
+	ekave = [x for _, x in sorted(zip(Rds, ekave))]
+	enave = [x for _, x in sorted(zip(Rds, enave))]
+	Rds = sorted(Rds)
+
+	# print(Rds, kwins)
 
 	######## the percentage that ties with the optimal solution
 	plt.figure(figsize=(18, 6))
 	for i, (Rd, Ri, n, kwin, nwin, ek, en, c) in enumerate(zip(Rds, Ris, ns, kwins, nwins, ekave, enave, colors)):
 			# winning rate	
 			if i > -1:
+				# print(Rd)
 				temp = [(r, 1- kwin_/n_) for r, kwin_, n_ in zip(Ri, kwin, n)]
 				temp = sorted(temp, key=lambda x: x[0])
-				print(min([x[1] for x in temp]))
+				# print(min([x[1] for x in temp]))
 				plt.plot([d[0] for d in temp], [d[1] for d in temp], 
 						color=c, linestyle='solid', linewidth=2.5,
-						label=r'$R_c=%s$'%str(Rd))
+						label=r'$R^c=%s$'%str(Rd))
 			# values			
 	fs = 36
 	plt.grid()
 	plt.gca().tick_params(axis='both', which='major', labelsize=fs)
 	plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
 	plt.legend(ncol=2, fontsize=fs*0.8)
-	plt.xlabel(r'$R_d(m)$', fontsize=fs)
-	plt.ylabel(r'$P(e_{PN}=e_{opt})$', fontsize=fs)
+	plt.xlabel(r'$R^d(m)$', fontsize=fs)
+	plt.ylabel(r'$P(e_{PN}=e_{GN})$', fontsize=fs)
 	plt.subplots_adjust(left=0.1, right=0.95, top=0.9, bottom=0.2)
 	plt.show()
 
@@ -163,15 +175,15 @@ def plot_assign_statistics(res_path=PATH, nd=3, ni=12):
 				# print(min([x[1] for x in temp]))
 				plt.plot([d[0] for d in temp], [d[1] for d in temp], 
 						color=c, linestyle='solid', linewidth=2.5,
-						label=r'$R_c=%s$'%str(Rd))
+						label=r'$R^c=%s$'%str(Rd))
 
 	fs = 36
 	plt.grid()
 	plt.gca().tick_params(axis='both', which='major', labelsize=fs)
 	plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
-	plt.legend(ncol=2, fontsize=fs*0.8)
-	plt.xlabel(r'$R_d(m)$', fontsize=fs)
-	plt.ylabel(r'$(\bar{e}_{opt}-\bar{e}_{PN})$', fontsize=fs)
+	plt.legend(ncol=2, fontsize=fs*0.8, loc='upper right')
+	plt.xlabel(r'$R^d(m)$', fontsize=fs)
+	plt.ylabel(r'$(\bar{e}_{PN}-\bar{e}_{GN})$', fontsize=fs)
 	plt.subplots_adjust(left=0.1, right=0.95, top=0.9, bottom=0.2)
 	plt.show()
 		
@@ -187,5 +199,5 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	evaluate_assignment(r=.3, nd=args.nd, ni=args.ni, vd=1., vi=.8, tht=[args.lb, args.ub])
+	# evaluate_assignment(r=.3, nd=args.nd, ni=args.ni, vd=1., vi=.8, tht=[args.lb, args.ub])
 	plot_assign_statistics(nd=args.nd, ni=args.ni)

@@ -27,7 +27,7 @@ import Envs.scenarios as scenarios
 from Envs.scenarios.game_mdmi.astrategy import knapsack_assign, negotiate_assign, augmented_negotiation
 
 
-MAX_EPISODES = 10
+MAX_EPISODES = 20
 MAX_EP_STEPS = 100
 
 PATH = './Logs/Geometric'
@@ -238,14 +238,15 @@ def plot_traj(Rd, Ri, i, cases, res_path=PATH, nd=3, ni=12):
 	plt.gca().add_patch(target)
 	plt.plot([xt+rt*cos(t) for t in tht], [yt+rt*sin(t) for t in tht], linewidth=2, label='target')
 
-	fs = 34
+	fs = 36
 	plt.axis("equal")
 	plt.grid()
 	plt.gca().tick_params(axis='both', which='major', labelsize=fs)
 	plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
-	plt.legend(ncol=1, fontsize=fs*.8)
+	# plt.legend(ncol=1, fontsize=fs*.8)
 	plt.xlabel(r'$x_D(m)$', fontsize=fs)
 	plt.ylabel(r'$y_D(m)$', fontsize=fs)
+	plt.subplots_adjust(left=0.15, right=0.92, top=0.92, bottom=0.15)
 	plt.show()
 
 def plot_game_statistics(res_path=PATH, nd=3, ni=12):
@@ -348,16 +349,7 @@ def plot_correlate(res_path=PATH, nd=3, ni=12):
 
 	k = -1
 	for i, f in enumerate(next(os.walk(res_path))[1]):
-		# if f != 'assign':
-		print(f)
-		# Rd, Ri = i.split('_')
-		# Rd = float(Rd.split('=')[-1])/100
-		# Ri = float(Ri.split('=')[-1])/100
-
-		# print(Rd, Ri)
-		# print(res_path + '/' + i + '/statistics.csv')
 		data = pd.read_csv(res_path + '/' + f + '/statistics.csv')
-		# print(data.columns)
 		if i == 0:
 			tc_n = data['tc:n'].to_numpy()
 			tc_k = data['tc:k'].to_numpy()
@@ -375,32 +367,50 @@ def plot_correlate(res_path=PATH, nd=3, ni=12):
 			# rcs_n[k].append(len(np.where(tl_n>0)[0])/len(tl_n))
 			# rcs_k[k].append(len(np.where(tl_k>0)[0])/len(tl_k))
 	
-	diff = pd.DataFrame({ 'e': e_k - e_n,
-							'tc': tc_k - tc_n,
-							'tl': tl_k - tl_n})
-	diff = diff.sort_values(by=['e'])
 
+	diff_tl = pd.DataFrame({'e': e_k - e_n, 'data': tl_k - tl_n})
+	diff_tl = diff_tl.sort_values(by=['e'])
+
+
+	dwin = [tl_n_>0 and tl_k_>0 for tl_n_, tl_k_ in zip(tl_n, tl_k)]
+	e_n = np.array([e_n[i] for i, dw in enumerate(dwin) if dw])
+	e_k = np.array([e_k[i] for i, dw in enumerate(dwin) if dw])
+	tc_n = np.array([tc_n[i] for i, dw in enumerate(dwin) if dw])
+	tc_k = np.array([tc_k[i] for i, dw in enumerate(dwin) if dw])
+
+	diff_tc = pd.DataFrame({'e': e_k - e_n, 'data': tc_k - tc_n})
+	# diff_tc = diff_tc.sort_values(by=['e'])
+
+
+	diff = diff_tl
 
 	# plot linear regression
 	model = LinearRegression()
-	model.fit(diff['e'].to_numpy().reshape(-1, 1), diff['tc'])
-	r_sq = model.score(diff['e'].to_numpy().reshape(-1, 1), diff['tc'])
+	model.fit(diff['e'].to_numpy().reshape(-1, 1), diff['data'])
+	r_sq = model.score(diff['e'].to_numpy().reshape(-1, 1), diff['data'])
 
 	b = model.intercept_
 	a = model.coef_
+	fs = 36
 	plt.figure(figsize=(12, 12))
-	plt.plot(diff['e'], diff['tc'], '.', markersize=10, markevery=10, label='data')
-	plt.plot([-10, 8], [-10*a + b, a*8 + b], linewidth=2, label='regression')
-
-	fs = 34
+	plt.plot(diff['e'], diff['data'], '.', markersize=12, markevery=10, label='data')
+	
 	plt.grid()
-	plt.text(-5, -2.3, 'coefficient of determination = %.2f'%r_sq, fontsize=fs)
+	plt.subplots_adjust(left=0.17, right=0.92, top=0.9, bottom=0.12)
 	plt.gca().tick_params(axis='both', which='major', labelsize=fs)
 	plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
-	plt.xlabel(r'$\bar{e}_{opt}-\bar{e}_{PN}$', fontsize=fs)
-	plt.ylabel(r'$\bar{Tc}_{opt}-\bar{Tc}_{PN}$', fontsize=fs)
-	plt.legend(fontsize=fs*.8, loc='upper left')
-	plt.show()
+	plt.xlabel(r'$\Delta\bar{e}$', fontsize=fs)
+
+	# plt.plot([-9, 12], [-15*a + b, a*15 + b], linewidth=2.5, label='regression')
+	# plt.text(-10, -1.5, 'coefficient of\n determination = %.2f'%r_sq, fontsize=fs)
+	# plt.ylabel(r'$\Delta T^c$', fontsize=fs)
+	# plt.legend(fontsize=fs*.8, loc='upper right')
+	# plt.show()
+	plt.plot([-12, 15], [-15*a + b, a*15 + b], linewidth=2.5, label='regression')
+	plt.text(-1., -1, 'coefficient of\n determination = %.2f'%r_sq, fontsize=fs)
+	plt.ylabel(r'$\Delta g$', fontsize=fs)
+	plt.legend(fontsize=fs*.8, loc='upper right')
+	plt.show()	
 
 
 	# plot histogram
@@ -425,6 +435,6 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	# evaluate_game(r=.3, nd=args.nd, ni=args.ni, vd=1., vi=.8, render_every=1e10, tht=[args.lb, args.ub])
-	# plot_traj(4, 2, 4, ['negotiate', 'knapsack'], nd=args.nd, ni=args.ni)	
-	plot_game_statistics(nd=args.nd, ni=args.ni)
-	plot_correlate(nd=args.nd, ni=args.ni)
+	plot_traj(4, 2, 10, ['negotiate', 'knapsack'], nd=args.nd, ni=args.ni)	
+	# plot_game_statistics(nd=args.nd, ni=args.ni)
+	# plot_correlate(nd=args.nd, ni=args.ni)
