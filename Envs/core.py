@@ -193,18 +193,24 @@ class Game(World): # @FloraFu 20200729
             defender.mem.n = [i for i in defender.state.n]
         
         # update intruders' memories AND current state
+        ents, caps = [], []
+        # print('before cheking:', self.intruders[-1].name, self.intruders[-1].state.a)
         for intruder in self.intruders:
             intruder.mem.e = intruder.state.e
             intruder.mem.n = [d for d in intruder.state.n]
-            # if not (intruder.state.e or bool(len(intruder.state.n))):
+            ent, dlist = None, None
+
             if intruder.state.a:
-                if intruder.enter_callback(intruder, self):
+                # print('checking', intruder.name)
+                ent = intruder.enter_callback(intruder, self)
+                if ent:
+                    # print(intruder.name, 'enters')
                     intruder.state.e = True
                     intruder.state.a = False
                     intruder.state.te = self.t
                 dlist = intruder.capture_callback(intruder, self)
-                if dlist:
-                    # print('the %dth intruder is captured by the %dth defender'%(intruder.id, dlist[0]))
+                if dlist: 
+                    # print(intruder.name, 'captured')
                     intruder.state.n = dlist
                     intruder.state.a = False
                     intruder.state.tc = self.t
@@ -212,12 +218,17 @@ class Game(World): # @FloraFu 20200729
                         self.defenders[did].state.n.append(intruder.id)
                 # if norm(intruder.state.p_vel) < 1e-6:
                 #     intruder.state.a = False
+            ents.append(ent)
+            caps.append(dlist)
+        # print('after cheking:', self.intruders[-1].name, self.intruders[-1].state.a)
         
         # update neighbours
         for defender in self.defenders:
             self.update_neighbours_defender(defender)
         for intruder in self.intruders:
             self.update_neighbours_intruder(intruder)
+
+        return ents, caps
 
     def update_neighbours_defender(self, agent):
         # print('!!!!!!', dist(np.array([3., 4.]), np.array([0, .2])))
@@ -231,6 +242,7 @@ class Game(World): # @FloraFu 20200729
 
     def step(self):
         super(Game, self).step()
-        self.update_world_state()
+        ents, caps = self.update_world_state()
+        return ents, caps
 
                         

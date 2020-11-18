@@ -183,11 +183,11 @@ class Scenario(BaseScenario):
 		return agent.state.e or bool(len(agent.state.n))
 
 	def done_callback_defender(self, agent, world):
-		# print('!!!!!!!!!!')
+		# allcap = True
 		for intruder in world.intruders:
-			# if not self.done_callback_intruder(intruder, world):
 			if intruder.state.a:
 				return False
+		# print('allcap = ', allcap)
 		return True
 
 	def is_enter(self, agent, world):

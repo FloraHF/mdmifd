@@ -36,6 +36,8 @@ def replay_fromstart(env, dstrategy, tmin):
 
 	defenders = ['D'+str(d) for d in range(env.world.nd)]
 	intruders = ['I'+str(i) for i in range(env.world.ni)]
+	print(env.world.ni)
+	cap = dict()
 
 	states_simple = {p:{'x':[], 'y':[]} for p in defenders+intruders}
 	ts = [env.world.t + tmin]
@@ -45,11 +47,16 @@ def replay_fromstart(env, dstrategy, tmin):
 		states_simple[p]['x'].append(state[2*i])
 		states_simple[p]['y'].append(state[2*i+1])
 
-	for k in range(100):
+	done = False
+	for k in range(200):
 
 		_, _ = negotiate_assign(env.world, firstassign=True)
 		actions = [dstrategy(d, env.world) for d in env.world.defenders]
-		_, _, done_n, _ = env.step(actions)
+		_, _, done_n, info = env.step(actions)
+		# print(info)
+		for intruder, i_info in info.items():
+			if intruder not in cap:
+				cap.update({intruder:i_info})
 		
 		state = env.get_state() # make sure the order of players in state and players match
 		ts.append(env.world.t + tmin)
@@ -57,7 +64,9 @@ def replay_fromstart(env, dstrategy, tmin):
 			states_simple[p]['x'].append(state[2*i])
 			states_simple[p]['y'].append(state[2*i+1])
 
+		# print('during replay', done_n, print(all(done_n)))
 		if all(done_n):
+			# done = True
 			break
 	# print('replay:', ts)
 
@@ -67,4 +76,4 @@ def replay_fromstart(env, dstrategy, tmin):
 	for p, s in out.items():
 		s.update({'tmin': tmin})
 
-	return out, ts[-1]
+	return out, ts[-1], cap

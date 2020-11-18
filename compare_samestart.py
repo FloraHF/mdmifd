@@ -28,14 +28,15 @@ env = MultiAgentEnv(world, scenario.reset_world,
                     done_callback=scenario.done_callback_defender)
 
 # print(np.linspace(tmin, tmax, 30))
-states_simple, tmax_s = replay_fromstart(env, scenario.dstrategy, tmin=tmin)
+states_simple, tmax_s, cap_simple = replay_fromstart(env, scenario.dstrategy, tmin=tmin)
+# print(cap_simple)
 assign_gazebo, tc_gazebo = read_gazebo_assign('/Itarg.csv')
 assign_simple, tc_simple = read_gazebo_assign('/Itarg_pn.csv', toffset=tmin)
 
 # ################# plot trajectories #################
-compare_traj( np.linspace(tmin, tmax, 30), states_gazebo, assign_gazebo,
-			np.linspace(tmin, tmax_s, 30), states_simple, assign_simple,
-			cap_gazebo, params)
+compare_traj(np.linspace(tmin, tmax, 30), states_gazebo, assign_gazebo, cap_gazebo,
+			 np.linspace(tmin, tmax_s, 30), states_simple, assign_simple, cap_simple,
+			 params)
 
 # ################# plot assignments ################# 
 # assign_gazebo, tc_gazebo = read_gazebo_assign('/Itarg.csv')

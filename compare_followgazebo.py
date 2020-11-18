@@ -42,16 +42,16 @@ assign_simple, tc_simple = read_gazebo_assign('/Itarg_pn.csv')
 # ###############################################################
 
 # compare command velocity
-compare_cmdv(ts, cmd_gazebo, cmd_simple)
+# compare_cmdv(ts, cmd_gazebo, cmd_simple)
 
 # velocity and command velocity
 velocity_response(ts, cmd_gazebo, states_gazebo)
 
 # trajectory of gazebo and command velocity
 # print(ts)
-compare_traj_and_v(ts, states_gazebo, assign_simple, cap_gazebo, params, name='simple')
-compare_traj_and_v(ts, states_gazebo, assign_gazebo, cap_gazebo, params, name='gazebo')
+# compare_traj_and_v(ts, states_gazebo, assign_simple, cap_gazebo, params, name='simple')
+# compare_traj_and_v(ts, states_gazebo, assign_gazebo, cap_gazebo, params, name='gazebo')
 
 # plot assignment and efficiencies
-plot_assign(assign_gazebo, cap_gazebo)
-plot_assign(assign_simple, cap_gazebo)
+# plot_assign(assign_gazebo, cap_gazebo)
+# plot_assign(assign_simple, cap_gazebo)

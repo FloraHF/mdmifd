@@ -13,6 +13,7 @@ from math import cos, sin, pi
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
+from matplotlib.legend_handler import HandlerTuple
 from matplotlib import rc
 rc('text', usetex=True)
 
@@ -32,6 +33,8 @@ MAX_EP_STEPS = 100
 
 PATH = './Logs/Geometric'
 scenario = scenarios.load('game_mdmi').Scenario()
+
+
 
 def evaluate_game(r, nd, ni, vd, vi, log_PATH=PATH, render_every=1e5, n_ep=MAX_EPISODES, overlap=.0, tht=[0.1, 1.9]):
 
@@ -275,11 +278,6 @@ def plot_game_statistics(res_path=PATH, nd=3, ni=12):
 			e_n = data['e_ave:n'].to_numpy()
 			e_k = data['e_ave:k'].to_numpy()
 
-			# print(i, len(tl_n))
-
-			# print(len(np.where(tl_n<0)[0]))
-			# print(len(np.where(tl_k<0)[0]))
-
 			if Rd not in Rds:
 				Rds.append(Rd)
 				Ris.append([])
@@ -293,6 +291,11 @@ def plot_game_statistics(res_path=PATH, nd=3, ni=12):
 				es_k.append([])	
 				# k += 1
 
+			# only count Dwin cases for capture time
+			dwin = [tl_n_>0 and tl_k_>0 for tl_n_, tl_k_ in zip(tl_n, tl_k)]
+			tc_n = np.array([tc_n[i] for i, dw in enumerate(dwin) if dw])
+			tc_k = np.array([tc_k[i] for i, dw in enumerate(dwin) if dw])
+
 			Ris[Rds.index(Rd)].append(Ri)
 			tcs_n[Rds.index(Rd)].append(tc_n.mean())
 			tcs_k[Rds.index(Rd)].append(tc_k.mean())
@@ -303,41 +306,59 @@ def plot_game_statistics(res_path=PATH, nd=3, ni=12):
 			rcs_n[Rds.index(Rd)].append(len(np.where(tl_n>0)[0])/len(tl_n))
 			rcs_k[Rds.index(Rd)].append(len(np.where(tl_k>0)[0])/len(tl_k))
 
-	# for i in range(len(Rds)):
-	# 	Rds[i] = [Rds[i]]*len(Ris[i])
-
-	# print(Rds, Ris)
+	# ns = [x for _, x in sorted(zip(Rds, ns))]
+	Ris = [x for _, x in sorted(zip(Rds, Ris))]
+	tcs_n = [x for _, x in sorted(zip(Rds, tcs_n))]
+	tcs_k = [x for _, x in sorted(zip(Rds, tcs_k))]
+	tls_n = [x for _, x in sorted(zip(Rds, tls_n))]
+	tls_k = [x for _, x in sorted(zip(Rds, tls_k))]
+	es_n = [x for _, x in sorted(zip(Rds, es_n))]
+	es_k = [x for _, x in sorted(zip(Rds, es_k))]
+	rcs_n = [x for _, x in sorted(zip(Rds, rcs_n))]
+	rcs_k = [x for _, x in sorted(zip(Rds, rcs_k))]
+	Rds = sorted(Rds)
 
 	plt.figure(figsize=(18, 6))
+	colors = ['c', 'b', 'g', 'k', 'r', 'm']
+	lg, lb = [], []
 	for i, (Rd, Ri, tc_n, tc_k, tl_n, tl_k, rc_n, rc_k, e_n, e_k, c) in enumerate(zip(Rds, Ris, tcs_n, tcs_k, tls_n, tls_k, rcs_n, rcs_k, es_n, es_k, colors)):
-		# print(Rd, Ri)
-		if i > -1:
+		print(Rd)
+		if Rd > 1:
 			# plt.plot(Ri, tc_n, color=c, marker='o', markevery=1, linestyle='solid', label='Rd='+str(Rd)+',negotiate')
 			# plt.plot(Ri, tc_k, color=c, marker='o', markevery=1, linestyle='dashed', label='Rd='+str(Rd)+',knapsack')
 			# plt.plot(Ri, tl_n, color=c, linestyle='solid', label='Rd='+str(Rd)+',negotiate')
 			# plt.plot(Ri, tl_k, color=c, linestyle='dashed', label='Rd='+str(Rd)+',knapsack')
-			temp = [(r, rc_n_) for r, rc_n_ in zip(Ri, rc_n)]
+			temp = [(r, rc_n_) for r, rc_n_ in zip(Ri, tc_n)]
 			temp = sorted(temp, key=lambda x: x[0])
-			plt.plot([d[0] for d in temp], [d[1] for d in temp], 
-						color=c, linestyle='solid', linewidth=2, 
-						label=r'$R_c=$'+str(Rd)+',PN')
-			temp = [(r, rc_k_) for r, rc_k_ in zip(Ri, rc_k)]
+			dn = plt.scatter([d[0] for d in temp], [d[1] for d in temp], 
+						edgecolors=c, facecolors='None', s=500, linewidth=2.5, zorder=10)
+						# label=r'$R_c=$'+str(Rd)+',PN')
+
+			temp = [(r, rc_k_) for r, rc_k_ in zip(Ri, tc_k)]
 			temp = sorted(temp, key=lambda x: x[0])
-			plt.plot([d[0] for d in temp], [d[1] for d in temp], 
-						color=c, linestyle='dashed', linewidth=2, 
-						label=r'$R_c=$'+str(Rd)+',opt')
+			dk = plt.scatter([d[0] for d in temp], [d[1] for d in temp], marker='+',
+						color=c, 
+						# facecolors='None', 
+						s=500, linewidth=2.5, zorder=10)
+						# label=r'$R_c=$'+str(Rd)+',opt')
+
+			lg.append((dk, dn))
+			lb.append(r'$R_c=%.0fm'%Rd+'$')
 			# plt.plot(Ri, rc_k, color=c, linestyle='dashed', label='Rd='+str(Rd)+',knapsack')
 
 	fs = 36
-	plt.grid()
+
+	plt.grid(zorder=0)
 	plt.gca().tick_params(axis='both', which='major', labelsize=fs)
 	plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
-	plt.legend(ncol=2, fontsize=fs*0.8)
+	
 	plt.xlabel(r'$R_d(m)$', fontsize=fs)
-	# plt.ylabel(r'$(\bar{e}_{opt}-\bar{e}_{PN})$', fontsize=fs)
-	# plt.ylabel(r'$\bar{g}$', fontsize=fs)
-	plt.ylabel(r'$T_c$', fontsize=fs)
+	# plt.ylabel(r'$P(Ds$' + ' ' + r'$win)$', fontsize=fs)
+	plt.ylabel(r'$g$', fontsize=fs)
 	plt.subplots_adjust(left=0.1, right=0.95, top=0.9, bottom=0.2)
+	plt.legend(lg, lb, fontsize=fs*0.8, ncol=1, loc='upper right', bbox_to_anchor=(0, 0, .95, 1),
+				handler_map={tuple: HandlerTuple(ndivide=None)}
+				)
 	plt.show()
 
 
@@ -435,6 +456,6 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	evaluate_game(r=.3, nd=args.nd, ni=args.ni, vd=1., vi=.8, render_every=1e10, tht=[args.lb, args.ub])
-	plot_traj(4, 2, 10, ['negotiate', 'knapsack'], nd=args.nd, ni=args.ni)	
+	plot_traj(4, 2, 54, ['negotiate', 'knapsack'], nd=args.nd, ni=args.ni)	
 	# plot_game_statistics(nd=args.nd, ni=args.ni)
 	# plot_correlate(nd=args.nd, ni=args.ni)

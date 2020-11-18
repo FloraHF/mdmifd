@@ -43,20 +43,38 @@ class MultiAgentEnv(gym.Env):
         obs_n = []
         reward_n = []
         done_n = []
-        info_n = {'n': []}
+        info = dict()
         # set action for each agent
         for i, agent in enumerate(self.agents):
             self._set_action(action_n[i], agent, self.action_space[i])
         # advance world state
-        self.world.step()
+        ents, caps = self.world.step()
         # record observation for each agent
         for agent in self.agents:
             obs_n.append(self._get_obs(agent))
             reward_n.append(self._get_reward(agent))
             done_n.append(self._get_done(agent))
-            info_n['n'].append(self._get_info(agent))
+            # info_n['n'].append(self._get_info(agent))
 
-        return obs_n, reward_n, done_n, info_n
+        for i, (ent, cap) in enumerate(zip(ents, caps)):
+            # print('-----------Checking I'+str(i), '-----------')
+            temp = {'dcap': None, 'tcap': np.inf, 'tent': np.inf}
+            event = False # either capture or enter
+            if ent is True:
+                # print('entered')
+                temp['tent'] = self.world.t
+                event = True
+            if cap:
+                # print('captured')
+                temp['dcap'] = 'D' + str(cap[0])
+                temp['tcap'] = self.world.t
+                event = True
+            if event:
+                info.update({'I'+str(i):temp})
+
+        # print(self.world.t, info)
+
+        return obs_n, reward_n, done_n, info
 
     def reset(self, *arg, **kwarg):
         # print(kwarg)
