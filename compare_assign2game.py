@@ -28,7 +28,7 @@ import Envs.scenarios as scenarios
 from Envs.scenarios.game_mdmi.astrategy import knapsack_assign, negotiate_assign, augmented_negotiation
 
 
-MAX_EPISODES = 25
+MAX_EPISODES = 10
 MAX_EP_STEPS = 100
 
 PATH = './Logs/Geometric'
