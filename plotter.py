@@ -295,6 +295,7 @@ def compare_cmdv(ts, cmd_gazebo, cmd_simple):
 def velocity_response(ts, cmd_gazebo, states_gazebo):
 
 	plt.figure(figsize=plot_size)
+	# print('!!!!!!!!')
 
 	for d in cmd_gazebo:
 		if 'D' in d:

@@ -130,7 +130,7 @@ def read_gazebo_cmd(res_path=res_path, tmin=0., tmax=10e10):
 		tmin = max(min(t), tmin)
 		tmax = min(max(t), tmax)
 		# tmax = min(t[-1], tmax)
-		cmd_gazebo[p] = {k:interp1d(t, data[k].to_numpy()) for k in ['vx', 'vy']}
+		cmd_gazebo[p] = {k:interp1d(t, data[k].to_numpy()/40) for k in ['vx', 'vy']}
 	return cmd_gazebo, tmin, tmax
 
 

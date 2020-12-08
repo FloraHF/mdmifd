@@ -5,7 +5,7 @@ from Envs.environment import MultiAgentEnv
 
 from reader import read_exp_param, read_gazebo_state, read_gazebo_cmd, read_gazebo_cap, read_gazebo_assign
 from replay import replay_fromstart
-from plotter import compare_traj
+from plotter import compare_traj, velocity_response
 
 # result file
 resid = 'data_01'
@@ -39,7 +39,9 @@ states_simple, tmax_s, cap_simple = replay_fromstart(env, scenario.dstrategy, tm
 assign_simple, tc_simple = read_gazebo_assign('/Itarg_pn.csv', res_path=res_path, toffset=tmin)
 # print(assign_simple)
 
-# ################# plot trajectories #################
-compare_traj(np.linspace(tmin, tmax, 30), states_exp, assign_exp, cap_exp,
+################# plot trajectories #################
+compare_traj(np.linspace(tmin, tmax, 100), states_exp, assign_exp, cap_exp,
 			 np.linspace(tmin, tmax_s, 30), states_simple, assign_simple, cap_simple,
 			 params)
+
+velocity_response(np.linspace(tmin, tmax, 100), cmd_exp, states_exp)

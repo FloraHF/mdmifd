@@ -67,8 +67,8 @@ class Scenario(BaseScenario):
 				agent.enter_callback = self.is_enter
 				agent.capture_callback = self.is_capture				
 				agent.silent = True		
-				# agent.Rd = Ro
-				# agent.Ri = Rt
+				agent.Rd = Ro
+				agent.Ri = Rt
 			# agent.size = 0
 
 		world.r = world.intruders[0].size + world.defenders[0].r
@@ -331,12 +331,13 @@ class Scenario(BaseScenario):
 		action.u = np.array([0., 0.])
 
 		xds = []
-		for D in world.agents:
-			if 'D' in D.name:
-				xds.append(np.array([x for x in D.state.p_pos]))
+		# for D in world.agents:
+		# 	if 'D' in D.name:
+		# 		xds.append(np.array([x for x in D.state.p_pos]))
 		# print(xds)
-		# for D in agent.neigh_d:
-		# 	xds.append(np.array([x for x in world.defenders[D].state.p_pos]))
+		for D in agent.neigh_d:
+			xds.append(np.array([x for x in world.defenders[D].state.p_pos]))
+		# print(xds)
 		vd = world.agents[0].max_speed
 
 		if agent.state.a:
