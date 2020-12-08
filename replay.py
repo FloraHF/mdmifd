@@ -36,7 +36,7 @@ def replay_fromstart(env, dstrategy, tmin):
 
 	defenders = ['D'+str(d) for d in range(env.world.nd)]
 	intruders = ['I'+str(i) for i in range(env.world.ni)]
-	print(env.world.ni)
+	# print(env.world.ni)
 	cap = dict()
 
 	states_simple = {p:{'x':[], 'y':[]} for p in defenders+intruders}

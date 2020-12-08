@@ -6,8 +6,10 @@ from scipy.interpolate import interp1d
 from Envs.scenarios.game_mdmi.utils import prefstring_to_list
 
 # result file
-resid = 'res_00_05_value'
-res_path = '/home/flora/mdmi_data/' + resid + '/'
+# resid = 'res_00_05_value'
+# res_path = '/home/flora/mdmi_data/' + resid + '/'
+resid = 'data_01'
+res_path = '/home/flora/crazyflie_mdmifd/data/' + resid + '/'
 
 # find out players recorded, and sort by their id
 players = [p for p in next(os.walk(res_path))[1]]
@@ -53,8 +55,53 @@ def read_gazebo_param(res_path=res_path):
 			'Rtarg': params['D0']['target:R'],
 			'iselect_mode': params['D0']['iselect_mode']}
 
+# read player parameters, experiment
+def read_exp_param(res_path=res_path):
+	params = dict()
+	for p in players:
+		data = pd.read_csv(res_path + p + '/param.csv')
+		data = data.set_index('param').T
+		params[p] = data.to_dict('records')[0]
+		# print(params[p])
+		for k in params[p]:
+			if 'target:' in k:
+				if 'type' in k:
+					params[p][k] = params[p][k]
+				else:
+					params[p][k] = float(params[p][k])
+			elif k != 'id' and k != 'iselect_mode' and 'dict' not in k:
+				if k == 'ni' or k == 'nd':
+					params[p][k] = int(params[p][k])
+				else:
+					params[p][k] = float(params[p][k])
+			else:
+				params[p][k] = params[p][k]
+
+	cf_dict = dict()
+	for r_cf in params[p]['cf_dict'].split('!'):
+		r_cf = r_cf.split('_')
+		cf_dict.update({r_cf[0]:r_cf[1]})
+
+	xds=[np.array([params[d]['x0'], params[d]['y0']]) for d in defenders]
+	xis=[np.array([params[i]['x0'], params[i]['y0']]) for i in intruders]
+
+	return {'r': params['D0']['r'] 	,
+			'nd': params['D0']['nd'],	# same for all players
+			'ni': params['D0']['ni'],	# same for all players
+			'Rt': params['D0']['Rteam'],
+			'Ro': params['D0']['Roppo'],
+			'vd': params['D0']['vmax'],	# same for all defenders
+			'vi': params['I0']['vmax'],	# same for all intruders
+			'xds': xds,
+			'xis': xis,
+			'x0targ': params['D0']['target:x0'],
+			'y0targ': params['D0']['target:y0'],
+			'Rtarg': params['D0']['target:R'],
+			'cf_dict': cf_dict,
+			'iselect_mode': params['D0']['iselect_mode']}
+
 # read players states
-def read_gazebo_state(res_path=res_path, tmin=0., tmax=100.):
+def read_gazebo_state(res_path=res_path, tmin=0., tmax=10e10):
 	states_gazebo = dict()
 	for p in players:
 		data = pd.read_csv(res_path + p + '/State.csv')
@@ -63,14 +110,17 @@ def read_gazebo_state(res_path=res_path, tmin=0., tmax=100.):
 		# t = t - tmin_temp
 		tmin = max(min(t), tmin)
 		tmax = min(max(t), tmax)
+		# print(max(data['x']))
 		# tmax = min(t[-1], tmax)
 		states_gazebo[p] = {k:interp1d(t, data[k].to_numpy(), fill_value='extrapolate') for k in ['x', 'y', 'z', 'vx', 'vy']}
 		states_gazebo[p].update({'tmin': t[0]})
+		# print(min(states_gazebo[p]['x'](t)), max(states_gazebo[p]['x'](t)))
+		# print(t[-1], tmax)
 
 	return states_gazebo, tmin, tmax
 
 # read player commands
-def read_gazebo_cmd(res_path=res_path, tmin=0., tmax=100.):
+def read_gazebo_cmd(res_path=res_path, tmin=0., tmax=10e10):
 	cmd_gazebo = dict()
 	for p in players:
 		data = pd.read_csv(res_path + p + '/Command.csv')
@@ -84,7 +134,7 @@ def read_gazebo_cmd(res_path=res_path, tmin=0., tmax=100.):
 	return cmd_gazebo, tmin, tmax
 
 
-def read_gazebo_cap(res_path=res_path, tmax=100):
+def read_gazebo_cap(res_path=res_path, tmax=10e10):
 	cap_gazebo = {i:{'dcap': None, 'tcap': np.inf, 'tent': np.inf} for i in intruders}
 	maxte = 0
 	for i in intruders:
@@ -109,17 +159,19 @@ def read_gazebo_assign(data_file, res_path=res_path, toffset=0):
 	tc = 0
 	for d in defenders:
 		data = pd.read_csv(res_path + d + data_file)
-		t = data['t'].to_numpy() + toffset
-		# t = t - min(t)
-		i = np.array([int(ii[1:]) for ii in data['i'].to_list()])
-		e = data['e'].to_numpy()
-		pref = [prefstring_to_list(pstr) for pstr in data['pref']]
-		assign[d] = {'t': t,
-					 'i': i,
-					 'e': e,
-					 'pref': pref,
-					 'approx': interp1d(t, i)}
-		tc = max(tc, t[-1])
+		if not data.empty:	# print(data)
+			t = data['t'].to_numpy() + toffset
+			# t = t - min(t)
+			i = np.array([int(ii[1:]) for ii in data['i'].to_list()])
+			e = data['e'].to_numpy()
+			pref = [prefstring_to_list(pstr) for pstr in data['pref']]
+			# print(pref)
+			assign[d] = {'t': t,
+						 'i': i,
+						 'e': e,
+						 'pref': pref,
+						 'approx': interp1d(t, i)}
+			tc = max(tc, t[-1])
 	return assign, tc
 
 if __name__ == '__main__':

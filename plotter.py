@@ -219,8 +219,8 @@ def compare_traj(ts_gazebo, states_gazebo, assign_gazebo, cap_gazebo,
 	plt.gca().tick_params(axis='both', which='minor', labelsize=fs)
 	plt.xlabel(r'$x(m)$', fontsize=fs)
 	plt.ylabel(r'$y(m)$', fontsize=fs)
-	plt.xlim(0, 5)
-	plt.ylim(0, 5)
+	plt.xlim(-2, 2)
+	plt.ylim(-1, 2)
 	plt.legend([lgd, lgi], [r'$D$', r'$I$'],
 			fontsize=fs*0.75, loc='upper right',
 			handler_map={tuple: HandlerTuple(ndivide=None)})		

@@ -23,6 +23,7 @@ dcolors = [np.array([0.1, 1., 0.05]),
 class Scenario(BaseScenario):
 	def make_world(self, r=.6, 
 					nd=1, ni=1, 
+					xt=5., yt=2.5, Rtarg=1.25,
 					vd=1., vi=.8, 
 					Rt=5., Ro=5., 
 					xds=None, xis=None, 
@@ -71,15 +72,19 @@ class Scenario(BaseScenario):
 			# agent.size = 0
 
 		world.r = world.intruders[0].size + world.defenders[0].r
-		world.target = CircleTarget(1.25)
+		world.target = CircleTarget(Rtarg, x=xt, y=yt)
+		# print(Rtarg, xt, yt)
 		world.target.name = 'target 0'
 		world.target.color = np.array([.0, .0, .9])
 		world.landmarks = [world.target]
 		# print(xds)
-		self.datadir = '/home/flora/mdmi_data/' + str(resid) + '/'
+		if world.mode == 'gazebo':
+			self.datadir = '/home/flora/mdmi_data/' + str(resid) + '/'
+		if world.mode == 'exp':
+			self.datadir = '/home/flora/crazyflie_mdmifd/data/' + str(resid) + '/'
 		self.reset_world(world, xds=xds, xis=xis)
 
-		if world.mode == 'gazebo':
+		if world.mode in ['gazebo', 'exp']:
 			for d in world.defenders:
 				with open(self.datadir + '/D' + str(d.id) + '/Itarg_pn.csv', 'w') as f:
 					f.write('t,i,e,pref\n')
@@ -300,7 +305,8 @@ class Scenario(BaseScenario):
 		eff = agent.state.f[agent.state.o.index(icurr)]
 
 
-		if world.mode == 'gazebo':
+		if world.mode in ['gazebo', 'exp']:
+			# print(self.datadir + '/D' + str(agent.id) + '/Itarg_pn.csv')
 			if agent.state.s == 'pwn':
 				with open(self.datadir + '/D' + str(agent.id) + '/Itarg_pn.csv', 'a') as f:
 					f.write('%.2f,%s,%.6f,%s\n'%(world.t, 'I'+str(icurr), eff, state_to_prefstring(agent.state)))
