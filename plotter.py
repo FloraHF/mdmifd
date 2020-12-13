@@ -69,7 +69,7 @@ def process_assign(ts, assign, param):
 	return iass_seg
 
 def plot_traj(ts, states, iass_seg, dcap, twpts, param, linestyle='solid'):
-
+	# print('ploting requrest', ts[-1])
 	lgd = []
 	for p, s in states.items():
 		# print(s)
@@ -210,7 +210,7 @@ def compare_traj(ts_gazebo, states_gazebo, assign_gazebo, cap_gazebo,
 	
 	plt.figure(figsize=traj_size)
 	lgd, lgi = plot_traj(ts_gazebo, states_gazebo, iass_seg_gazebo, dcap_gazebo, twpts_gazebo, param, linestyle='solid')
-	_,   _   = plot_traj(ts_simple, states_simple, iass_seg_simple, dcap_simple, twpts_simple, param, linestyle='dashed')
+	# _,   _   = plot_traj(ts_simple, states_simple, iass_seg_simple, dcap_simple, twpts_simple, param, linestyle='dashed')
 	plot_target(param)
 
 	plt.axis('equal')

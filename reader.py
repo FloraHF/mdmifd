@@ -8,11 +8,12 @@ from Envs.scenarios.game_mdmi.utils import prefstring_to_list
 # result file
 # resid = 'res_00_05_value'
 # res_path = '/home/flora/mdmi_data/' + resid + '/'
-resid = 'data_01'
-res_path = '/home/flora/crazyflie_mdmifd/data/' + resid + '/'
+resid = 'data_20'
+res_path = '/home/flora/crazyflie_mdmifd_expdata/' + resid + '/'
 
 # find out players recorded, and sort by their id
 players = [p for p in next(os.walk(res_path))[1]]
+# print('!!!!!!!!!!!', players)
 defenders = sorted([p for p in players if 'D' in p], key=lambda x: int(x[1:]))
 intruders = sorted([p for p in players if 'I' in p], key=lambda x: int(x[1:]))
 players = defenders + intruders
@@ -112,10 +113,11 @@ def read_gazebo_state(res_path=res_path, tmin=0., tmax=10e10):
 		tmax = min(max(t), tmax)
 		# print(max(data['x']))
 		# tmax = min(t[-1], tmax)
-		states_gazebo[p] = {k:interp1d(t, data[k].to_numpy(), fill_value='extrapolate') for k in ['x', 'y', 'z', 'vx', 'vy']}
+		states_gazebo[p] = {k:interp1d(t, data[k].to_numpy()) for k in ['x', 'y', 'z', 'vx', 'vy']}
 		states_gazebo[p].update({'tmin': t[0]})
 		# print(min(states_gazebo[p]['x'](t)), max(states_gazebo[p]['x'](t)))
 		# print(t[-1], tmax)
+		# print('from reading', p, tmin, tmax)
 
 	return states_gazebo, tmin, tmax
 
@@ -137,6 +139,7 @@ def read_gazebo_cmd(res_path=res_path, tmin=0., tmax=10e10):
 def read_gazebo_cap(res_path=res_path, tmax=10e10):
 	cap_gazebo = {i:{'dcap': None, 'tcap': np.inf, 'tent': np.inf} for i in intruders}
 	maxte = 0
+	ncap, nent = 0, 0
 	for i in intruders:
 		cap_data = pd.read_csv(res_path + i + '/Dcap.csv')
 		ent_data = pd.read_csv(res_path + i + '/Tent.csv')
@@ -144,13 +147,17 @@ def read_gazebo_cap(res_path=res_path, tmax=10e10):
 			# print(i, 'enters at', ent_data['t'].values[-1])
 			cap_gazebo[i]['tent'] = ent_data['t'].values[-1]
 			maxte = max(maxte, ent_data['t'].values[-1])
+			nent += 1
 		else:
 			if not cap_data['t'].empty:
 				# print(i, 'is captured at', cap_data['t'].values[-1])
 				cap_gazebo[i]['dcap'] = cap_data['d'].values[-1]
 				cap_gazebo[i]['tcap'] = cap_data['t'].values[-1]
 				maxte = max(maxte, cap_data['t'].values[-1])
-		# print(maxte)
+				ncap += 1
+
+	print('ncap: ', ncap, 'nent: ', nent)
+
 	return cap_gazebo, min(maxte, tmax)
 
 

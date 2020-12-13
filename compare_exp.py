@@ -8,17 +8,20 @@ from replay import replay_fromstart
 from plotter import compare_traj, velocity_response
 
 # result file
-resid = 'data_01'
-res_path = '/home/flora/crazyflie_mdmifd/data/' + resid + '/'
+resid = 'data_20'
+res_path = '/home/flora/crazyflie_mdmifd_expdata/' + resid + '/'
 
 # read data
 params = read_exp_param(res_path=res_path)
 states_exp, tmin, tmax  = read_gazebo_state(res_path=res_path)
+# print('from reading states', tmin, tmax)
 cmd_exp, tmin, tmax  = read_gazebo_cmd(tmin=tmin, tmax=tmax)
+# print('from reading cmd', tmin, tmax)
 cap_exp, tmax = read_gazebo_cap(tmax=tmax)
+# print('from reading cap', tmin, tmax)
 assign_exp, tc_exp = read_gazebo_assign('/Itarg.csv')
 
-# print(states_exp['D0']['x'])
+# print(params)
 
 # replay the experiment using simple dynamics
 scenario = scenarios.load('game_mdmi').Scenario()
@@ -44,4 +47,4 @@ compare_traj(np.linspace(tmin, tmax, 100), states_exp, assign_exp, cap_exp,
 			 np.linspace(tmin, tmax_s, 30), states_simple, assign_simple, cap_simple,
 			 params)
 
-velocity_response(np.linspace(tmin, tmax, 100), cmd_exp, states_exp)
+# velocity_response(np.linspace(tmin, tmax, 100), cmd_exp, states_exp)

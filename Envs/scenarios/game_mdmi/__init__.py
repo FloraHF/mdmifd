@@ -42,6 +42,8 @@ class Scenario(BaseScenario):
 		world.vi = vi
 		world.nl = 1 
 
+		# print('!!!!!!!!!', nd, ni)
+
 		# initial location generation
 		world.overlap = overlap
 		world.tht_lb = tht[0]
@@ -81,7 +83,7 @@ class Scenario(BaseScenario):
 		if world.mode == 'gazebo':
 			self.datadir = '/home/flora/mdmi_data/' + str(resid) + '/'
 		if world.mode == 'exp':
-			self.datadir = '/home/flora/crazyflie_mdmifd/data/' + str(resid) + '/'
+			self.datadir = '/home/flora/crazyflie_mdmifd_expdata/' + str(resid) + '/'
 		self.reset_world(world, xds=xds, xis=xis)
 
 		if world.mode in ['gazebo', 'exp']:
