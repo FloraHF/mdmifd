@@ -27,7 +27,7 @@ class Scenario(BaseScenario):
 					vd=1., vi=.8, 
 					Rt=5., Ro=5., 
 					xds=None, xis=None, 
-					resid=1, 
+					datadir='', 
 					iselect_mode='value',
 					mode='gazebo',
 					overlap=0.,
@@ -35,6 +35,8 @@ class Scenario(BaseScenario):
 
 		world = Game()
 		world.mode = mode
+		world.datadir = datadir
+		# print(Rt, Ro)
 		# world properties
 		world.nd = nd
 		world.ni = ni
@@ -69,8 +71,8 @@ class Scenario(BaseScenario):
 				agent.enter_callback = self.is_enter
 				agent.capture_callback = self.is_capture				
 				agent.silent = True		
-				agent.Rd = Ro
-				agent.Ri = Rt
+				# agent.Rd = Ro
+				# agent.Ri = Rt
 			# agent.size = 0
 
 		world.r = world.intruders[0].size + world.defenders[0].r
@@ -80,17 +82,17 @@ class Scenario(BaseScenario):
 		world.target.color = np.array([.0, .0, .9])
 		world.landmarks = [world.target]
 		# print(xds)
-		if world.mode == 'gazebo':
-			self.datadir = '/home/flora/mdmi_data/' + str(resid) + '/'
-		if world.mode == 'exp':
-			self.datadir = '/home/flora/crazyflie_mdmifd_expdata/' + str(resid) + '/'
+		# if world.mode == 'gazebo':
+		# 	self.datadir = '/home/flora/mdmi_data/' + str(resid) + '/'
+		# if world.mode == 'exp':
+		# 	self.datadir = '/home/flora/crazyflie_mdmifd_expdata/' + str(resid) + '/'
 		self.reset_world(world, xds=xds, xis=xis)
 
 		if world.mode in ['gazebo', 'exp']:
 			for d in world.defenders:
-				with open(self.datadir + '/D' + str(d.id) + '/Itarg_pn.csv', 'w') as f:
+				with open(world.datadir + '/D' + str(d.id) + '/Itarg_pn.csv', 'w') as f:
 					f.write('t,i,e,pref\n')
-				with open(self.datadir + '/D' + str(d.id) + '/Itarg_op.csv', 'w') as f:
+				with open(world.datadir + '/D' + str(d.id) + '/Itarg_op.csv', 'w') as f:
 					f.write('t,i,e,pref\n')
 
 		return world
@@ -278,7 +280,8 @@ class Scenario(BaseScenario):
 			dx = agent.mem.init_p_pos - agent.state.p_pos
 			dis = norm(dx)
 			# u = 0.3*agent.u_range*dx/dis - agent.state.p_vel if dis > 0 else np.array([0., 0.])
-			u = 0.5*agent.u_range*dx/dis if dis > 0 else np.array([0., 0.])
+			# u = 0.5*agent.u_range*dx/dis if dis > 0 else np.array([0., 0.])
+			u = np.array([0, 0])
 			
 			return u
 
@@ -310,10 +313,10 @@ class Scenario(BaseScenario):
 		if world.mode in ['gazebo', 'exp']:
 			# print(self.datadir + '/D' + str(agent.id) + '/Itarg_pn.csv')
 			if agent.state.s == 'pwn':
-				with open(self.datadir + '/D' + str(agent.id) + '/Itarg_pn.csv', 'a') as f:
+				with open(world.datadir + '/D' + str(agent.id) + '/Itarg_pn.csv', 'a') as f:
 					f.write('%.2f,%s,%.6f,%s\n'%(world.t, 'I'+str(icurr), eff, state_to_prefstring(agent.state)))
 			if agent.state.s == 'opt':
-				with open(self.datadir + '/D' + str(agent.id) + '/Itarg_op.csv', 'a') as f:
+				with open(world.datadir + '/D' + str(agent.id) + '/Itarg_op.csv', 'a') as f:
 					f.write('%.2f,%s,%.6f,%s\n'%(world.t, 'I'+str(icurr), eff, state_to_prefstring(agent.state)))
 
 		# compute the heading to capture intruder icurr
