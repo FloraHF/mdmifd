@@ -177,6 +177,7 @@ class Plotter(object):
 			for k, (t, pref_dict, itarg) in enumerate(zip(ass['t'], ass['pref'], ass['i'])):
 				tmin = max(tmin, t.min())
 				tmax = min(tmax, t.max())
+				# print(t)
 				if k%skip == 0:
 					for i, e in pref_dict.items():# preferred intruder
 						plt.plot(t, circoffset+circscale*int(i[1:]), 'C0o', 
@@ -191,10 +192,10 @@ class Plotter(object):
 		plt.gca().tick_params(axis='both', which='major', labelsize=self.fs)
 		plt.gca().tick_params(axis='both', which='minor', labelsize=self.fs)
 		# plt.ylim(0, 36)
-		plt.xlim(tmin, tmax)
+		plt.xlim(tmax, tmin)
 		plt.subplots_adjust(left=.09, bottom=.3, right=.9, top=.9)
-		plt.yticks([circoffset+circscale*i for i in range(7) if i%2==1], 
-					[r'$'+str(i)+'$' for i in range(7) if i%2==1])
+		plt.yticks([circoffset+circscale*i for i in range(4) if i%1==0], 
+					[r'$'+str(i)+'$' for i in range(4) if i%1==0])
 		plt.ylabel(r'$I_i$', fontsize=self.fs)
 		plt.xlabel(r'$t(s)$', fontsize=self.fs)
 
