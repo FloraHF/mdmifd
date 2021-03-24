@@ -86,8 +86,8 @@ class Plotter(object):
 		for p, s in states.items():
 			# print(s)
 			if 'D' in p: # defenders' trajectories
-				dicon, = plt.plot([s['x'](t) for t in [s['tmin']]+list(ts)], 
-						 [s['y'](t) for t in [s['tmin']]+list(ts)], 
+				dicon, = plt.plot([s['x'](t) for t in list(ts)], 
+						 [s['y'](t) for t in list(ts)], 
 						 color=dcolors[int(p[1:])], label=p, lw=self.lw, ls=linestyle,
 						 marker='o', ms=self.ms_traj, markevery=1000)
 				lgd.append(dicon)
@@ -95,8 +95,7 @@ class Plotter(object):
 				# print('---------', p, '-------------')
 				if iass_seg[p]['t']: # if intruder p has been assigned to some defenders
 					# first segment
-					tseg = [s['tmin']] + \
-						   [t for t in ts if t < iass_seg[p]['t'][0][0]+0.1] # in case not assigned at the beginning
+					tseg = [t for t in ts if t < iass_seg[p]['t'][0][0]+0.1] # in case not assigned at the beginning
 					# print(min(tseg), max(tseg))
 					iicon, = plt.plot([s['x'](t) for t in tseg], [s['y'](t) for t in tseg], 
 							 color=np.array([0.1, 1., 1.]), lw=self.lw, linestyle=linestyle,
@@ -162,27 +161,37 @@ class Plotter(object):
 		circscale = 4.
 		circoffset = 6.
 
+		tmin, tmax = 1e10, 0
+		for p, ass in assign.items():
+			tmin = min(tmin, min(ass['t']))
+			tmax = max(tmax, max(ass['t']))
+		# print(tmin, tmax)
+
 		plt.figure(figsize=self.plot_size)
 		lgp, lga = [], []
 		for d, (p, ass) in enumerate(assign.items()):
-			icon_pref, = plt.plot(-1, -1, 'C0o', 
+			icon_pref, = plt.plot(-10, -10, 'C0o', 
 								 ms=self.ms, alpha=0.2, color=dcolors[d])
-			icon_ass, = plt.plot(-1, -1, 'C0o', 
+			icon_ass, = plt.plot(-10, -10, 'C0o', 
 								 ms=self.ms, color=dcolors[d])
 			# icon_e, = plt.plot([0, 1], [-10, -12], color=dcolors[d], linewidth=lw)
 			lgp.append(icon_pref)
 			lga.append(icon_ass)
 			# lge.append(icon_e)
-			tmin, tmax = 0, 1e10
+			# tmin, tmax = 0, 1e10
 			for k, (t, pref_dict, itarg) in enumerate(zip(ass['t'], ass['pref'], ass['i'])):
-				tmin = max(tmin, t.min())
-				tmax = min(tmax, t.max())
+				t = t - tmin
+				# print(t)
+				# tmin = max(tmin, t.min())
+				# tmax = min(tmax, t.max())
 				# print(t)
 				if k%skip == 0:
 					for i, e in pref_dict.items():# preferred intruder
+						# print('!!!', t)
 						plt.plot(t, circoffset+circscale*int(i[1:]), 'C0o', 
 								 ms=self.ms, alpha=0.2, color=dcolors[d])
 					
+					# print('???',t)
 					plt.plot(t, circoffset+circscale*itarg, 'C0o', 
 							 ms=self.ms, color=dcolors[d]) # targeted intruder
 
@@ -191,8 +200,8 @@ class Plotter(object):
 		plt.grid()
 		plt.gca().tick_params(axis='both', which='major', labelsize=self.fs)
 		plt.gca().tick_params(axis='both', which='minor', labelsize=self.fs)
-		# plt.ylim(0, 36)
-		plt.xlim(tmax, tmin)
+		plt.ylim(0, 20)
+		plt.xlim(-.1, (tmax-tmin)*1.25)
 		plt.subplots_adjust(left=.09, bottom=.3, right=.9, top=.9)
 		plt.yticks([circoffset+circscale*i for i in range(4) if i%1==0], 
 					[r'$'+str(i)+'$' for i in range(4) if i%1==0])
@@ -202,15 +211,15 @@ class Plotter(object):
 		ax2 = plt.gca().twinx()
 		lge = []
 		for d, (p, ass) in enumerate(assign.items()): 
-			e, = ax2.plot(ass['t'], ass['e'], color=dcolors[d], lw=self.lw)
+			e, = ax2.plot(ass['t']-tmin, ass['e'], color=dcolors[d], lw=self.lw)
 			lge.append(e)
 
 		ax2.tick_params(axis='both', which='major', labelsize=self.fs)
 		ax2.tick_params(axis='both', which='minor', labelsize=self.fs)
 		ax2.set_ylabel(r'$e$', fontsize=self.fs)
 		ax2.set_ylim(-.1, 20.)	
-		plt.legend([tuple(lgp), tuple(lga), tuple(lge)], [r'preferred', r'assigned', r'$e$'],
-					fontsize=self.fs*0.75, loc='lower right',
+		plt.legend([tuple(lgp), tuple(lga), tuple(lge)], [r'pref', r'assg', r'$e$'],
+					fontsize=self.fs*0.75, loc='upper right',
 					handler_map={tuple: HandlerTuple(ndivide=None)})			
 		plt.show()
 
@@ -224,7 +233,7 @@ class Plotter(object):
 		iass_seg_simple = self.process_assign(ts_gazebo, assign_simple)
 		dcap_simple, twpts_simple = self.process_cap(ts_simple, cap_simple, tmin=ts_simple[0])
 		
-		plt.figure(figsize=self.traj_size)
+		plt.figure(figsize=(10.5, 7.5))
 		lgd, lgi = self.plot_traj(ts_gazebo, states_gazebo, iass_seg_gazebo, dcap_gazebo, twpts_gazebo, linestyle='solid')
 		_,   _   = self.plot_traj(ts_simple, states_simple, iass_seg_simple, dcap_simple, twpts_simple, linestyle='dashed')
 		self.plot_target()
@@ -235,11 +244,12 @@ class Plotter(object):
 		plt.gca().tick_params(axis='both', which='minor', labelsize=self.fs)
 		plt.xlabel(r'$x(m)$', fontsize=self.fs)
 		plt.ylabel(r'$y(m)$', fontsize=self.fs)
-		plt.xlim(-2, 2)
-		plt.ylim(-1, 2)
+		plt.xlim(-1.5, 2)
+		plt.ylim(-1, 1.5)
 		plt.legend([lgd, lgi], [r'$D$', r'$I$'],
-				fontsize=self.fs*0.75, loc='upper right',
-				handler_map={tuple: HandlerTuple(ndivide=None)})		
+				fontsize=self.fs*0.75, loc='lower right',
+				handler_map={tuple: HandlerTuple(ndivide=None)})	
+		plt.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.15)					
 		plt.show()
 		# plt.savefig(self.res_path+'trajectory_samestart.jpg')
 		# plt.close()
@@ -356,3 +366,5 @@ class Plotter(object):
 		# plt.savefig(self.res_path+'velocity_response_vx.jpg')
 		# plt.close()
 		plt.show()
+
+	# def plot_stats(self, )

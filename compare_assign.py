@@ -83,7 +83,9 @@ def plot_assign_statistics(res_path=PATH, nd=3, ni=12):
 	
 	Rds, Ris, ns, kwins, nwins, ekave, enave = [], [], [], [], [], [], []
 	# k = 0
+	# print(res_path)
 	for i in next(os.walk(res_path))[1]:
+		print(i)
 		Rd, Ri = i.split('_')
 		Rd = float(Rd.split('=')[-1])/100
 		Ri = float(Ri.split('=')[-1])/100			

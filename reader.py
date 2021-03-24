@@ -13,7 +13,7 @@ class Reader(object):
 		# result path
 		# self.res_path = '/home/flora/crazyflie_mdmifd_expdata/' + resid + '/'
 		self.res_path = res_path
-		
+		print(res_path)
 		# find out players recorded, and sort by their id
 		players = [p for p in next(os.walk(self.res_path))[1]]
 		self.defenders = sorted([p for p in players if 'D' in p], key=lambda x: int(x[1:]))
@@ -131,8 +131,10 @@ class Reader(object):
 			t = data['t'].to_numpy()
 			# tmin_temp = min(t)
 			# t = t - tmin_temp
+			# print('tmin for %s: '%p, min(t), 'tmin before', tmin)
 			tmin = max(min(t), tmin)
 			tmax = min(max(t), tmax)
+
 			# tmax = min(t[-1], tmax)
 			cmd[p] = {k:interp1d(t, data[k].to_numpy()/40) for k in ['vx', 'vy']}
 		return cmd, tmin, tmax
@@ -157,8 +159,13 @@ class Reader(object):
 					cap[i]['tcap'] = cap_data['t'].values[-1]
 					# print(i, cap[i]['tcap'])
 					maxte = max(maxte, cap_data['t'].values[-1])
+					# print('maxte is', maxte)
+					# print('tmax is', min(maxte, tmax))
 					ncap += 1
 
+		# print('maxte is', maxte)
+		# print('tmax is', tmax)							
+		# print('output tmax is', min(tmax, maxte))							
 		print('ncap: ', ncap, 'nent: ', nent)
 
 		return cap, min(maxte, tmax)
