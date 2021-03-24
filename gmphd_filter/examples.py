@@ -312,7 +312,6 @@ def extract_axis_for_plot(X_collection, delta):
 
 if __name__ == '__main__':
 
-
     # For example 1, uncomment the following code.
     # =================================================Example 1========================================================
     model = process_model_for_example_1()
