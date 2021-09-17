@@ -32,3 +32,6 @@ l = ax2.legend([(rpos, rneg), (rneg, rpos)], ['pad!=0', 'pad=0'],
                handler_map={(rpos, rneg): HandlerTuple(ndivide=None),
                             (rneg, rpos): HandlerTuple(ndivide=None, pad=0.)})
 plt.show()
+
+
+print('?????????????')
